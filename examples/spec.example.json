@@ -1,0 +1,12 @@
+{
+  "style_tone": "deep navy base, medical blue highlights, technology green accents, restrained academic polish",
+  "aspect_ratio": "16:9",
+  "slide_count": 12,
+  "purpose": "speech",
+  "scene": "academic",
+  "knowledge_base": [
+    "wiki/knowledge/user_notes.md",
+    "wiki/sources/source-deck.pdf",
+    "wiki/sources/reference-images/"
+  ]
+}

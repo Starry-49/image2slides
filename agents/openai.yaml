@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image2Slides"
+  short_description: "Image-generated slides to editable PPTX"
+  default_prompt: "Use $image2slides to turn supplied knowledge and visual direction into an editable PowerPoint deck."

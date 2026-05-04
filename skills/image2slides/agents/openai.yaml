@@ -1,0 +1,5 @@
+interface:
+  display_name: "Image2Slides"
+  short_description: "Create editable PPTX from image slide comps"
+  brand_color: "#2F80ED"
+  default_prompt: "Use $image2slides to create an editable deck from required slide intent, knowledge materials, GPT-image-2 slide images, and pixel QA."

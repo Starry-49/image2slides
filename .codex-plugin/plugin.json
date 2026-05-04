@@ -1,0 +1,42 @@
+{
+  "name": "image2slides",
+  "version": "0.1.0",
+  "description": "Generate editable PowerPoint decks from image-generated slide compositions and text-free backgrounds.",
+  "author": {
+    "name": "starry"
+  },
+  "homepage": "https://github.com/starry/image2slides",
+  "repository": "https://github.com/starry/image2slides",
+  "license": "MIT",
+  "keywords": [
+    "slides",
+    "pptx",
+    "image-generation",
+    "gpt-image-2",
+    "powerpoint"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Image2Slides",
+    "shortDescription": "Turn image-generated slide comps into editable PPTX decks",
+    "longDescription": "Image2Slides guides Codex through a visual-first slide workflow: capture required deck intent, build a wiki knowledge structure, separate grep-required facts from generative content, create completed slide images with GPT-image-2, derive matching text-free backgrounds, analyze text/blank regions, assemble editable PowerPoint text over background masters, and verify against the completed reference images.",
+    "developerName": "starry",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/starry/image2slides",
+    "privacyPolicyURL": "https://github.com/starry/image2slides",
+    "termsOfServiceURL": "https://github.com/starry/image2slides",
+    "defaultPrompt": [
+      "/image2slides Create a 16:9 academic talk deck with a cool blue medical style.",
+      "/image2slides Build an enterprise showcase deck from my provided materials."
+    ],
+    "brandColor": "#2F80ED",
+    "composerIcon": "./assets/icon.svg",
+    "logo": "./assets/icon.svg",
+    "screenshots": []
+  }
+}

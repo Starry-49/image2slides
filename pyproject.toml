@@ -1,0 +1,9 @@
+[project]
+name = "image2slides"
+version = "0.1.0"
+description = "Codex plugin for image-generated slide comps and editable PowerPoint output"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["skills/image2slides/scripts"]
