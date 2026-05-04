@@ -5,8 +5,8 @@
   "author": {
     "name": "starry"
   },
-  "homepage": "https://github.com/starry/image2slides",
-  "repository": "https://github.com/starry/image2slides",
+  "homepage": "https://github.com/Starry-49/image2slides",
+  "repository": "https://github.com/Starry-49/image2slides",
   "license": "MIT",
   "keywords": [
     "slides",
@@ -27,9 +27,9 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/starry/image2slides",
-    "privacyPolicyURL": "https://github.com/starry/image2slides",
-    "termsOfServiceURL": "https://github.com/starry/image2slides",
+    "websiteURL": "https://github.com/Starry-49/image2slides",
+    "privacyPolicyURL": "https://github.com/Starry-49/image2slides",
+    "termsOfServiceURL": "https://github.com/Starry-49/image2slides",
     "defaultPrompt": [
       "/image2slides Create a 16:9 academic talk deck with a cool blue medical style.",
       "/image2slides Build an enterprise showcase deck from my provided materials."
