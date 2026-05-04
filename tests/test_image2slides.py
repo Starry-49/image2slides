@@ -132,7 +132,10 @@ class Image2SlidesTests(unittest.TestCase):
             run_cli(["init", "--project", str(project), "--spec", str(spec)])
 
             source = project / "wiki/sources/source.png"
-            Image.new("RGB", (80, 60), "#2f80ed").save(source)
+            source_image = Image.new("RGB", (160, 120), "#ffffff")
+            draw_source = ImageDraw.Draw(source_image)
+            draw_source.rectangle((40, 30, 120, 90), fill="#2f80ed")
+            source_image.save(source)
             base_dir = project / "tmp/native_imagegen"
             base_dir.mkdir(parents=True)
             Image.new("RGB", (2048, 1152), "#eef6ff").save(base_dir / "slide_01_base.png")
@@ -146,6 +149,7 @@ class Image2SlidesTests(unittest.TestCase):
                             "path": "wiki/sources/source.png",
                             "bbox": [0.55, 0.2, 0.32, 0.42],
                             "panel_bbox": [0.52, 0.16, 0.4, 0.5],
+                            "fit_margin_px": 32,
                             "draw_frame": False,
                         }
                     ],
@@ -163,6 +167,14 @@ class Image2SlidesTests(unittest.TestCase):
             self.assertTrue((project / "background/slide_01_background.png").exists())
             background = Image.open(project / "background/slide_01_background.png")
             self.assertEqual(background.getpixel((1126, 231)), (238, 246, 255))
+            audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
+            layer = audit["layers"][0]
+            self.assertLessEqual(max(abs(v) for v in layer["center_delta_px"]), 1.0)
+            self.assertLess(layer["source_size_px"][0], 160)
+            self.assertLess(layer["source_size_px"][1], 120)
+            self.assertTrue(
+                image2slides.rect_inside(tuple(layer["paste_bbox"]), tuple(layer["fit_bbox"]), tolerance=0.004)
+            )
 
     def test_layout_audit_blocks_source_overlap(self) -> None:
         with tempfile_dir() as tmp:
@@ -181,7 +193,7 @@ class Image2SlidesTests(unittest.TestCase):
                         {
                             "path": "wiki/sources/source.png",
                             "bbox": [0.08, 0.12, 0.30, 0.20],
-                            "panel_bbox": [0.50, 0.20, 0.30, 0.30],
+                            "panel_bbox": [0.08, 0.12, 0.30, 0.20],
                             "draw_frame": False,
                         }
                     ],
@@ -196,7 +208,6 @@ class Image2SlidesTests(unittest.TestCase):
                 run_cli(["audit-layout", "--project", str(project), "--strict"])
             audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
             kinds = {issue["kind"] for issue in audit["issues"]}
-            self.assertIn("outside_panel", kinds)
             self.assertIn("text_overlap", kinds)
 
 

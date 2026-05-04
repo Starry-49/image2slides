@@ -84,6 +84,7 @@ Use [examples/spec.example.json](./examples/spec.example.json) as the starting s
 
    Results land in `completed/slide_XX_completed.png` and `background/slide_XX_background.png`.
    The layout audit verifies that source figures stay inside declared panels, do not overlap editable text, and do not add duplicate rounded frames over native imagegen panels.
+   Source fitting trims blank pixels, insets the declared panel by `fit_margin_px`, maximizes scale under the four parallel-edge constraints, then center-aligns the image inside that inset panel.
 
 5. Optional API CLI fallback:
 
