@@ -1,0 +1,416 @@
+{
+  "slides": [
+    {
+      "slide": 1,
+      "title": "描述性统计分析在 RNA-seq 数据中的应用",
+      "layout": "cover-with-source-framework",
+      "visual_intent": "Clean white academic cover with a source-locked method framework figure and quiet blue accents.",
+      "source_boundary": "mixed",
+      "background_color": "#fbfcfe",
+      "accent_color": "#2f80ed",
+      "source_layers": [
+        {
+          "path": "wiki/sources/media/image1.png",
+          "bbox": [
+            0.535,
+            0.19,
+            0.395,
+            0.48
+          ],
+          "draw_frame": false,
+          "panel_bbox": [
+            0.5,
+            0.13,
+            0.43,
+            0.61
+          ],
+          "trim_whitespace": true,
+          "fit_margin_px": 32
+        }
+      ],
+      "text_items": [
+        {
+          "role": "title",
+          "text": "描述性统计分析在 RNA-seq 数据中的应用",
+          "bbox": [
+            0.07,
+            0.17,
+            0.39,
+            0.18
+          ],
+          "font_size": 34,
+          "bold": true,
+          "color": "#102033"
+        },
+        {
+          "role": "subtitle",
+          "text": "方法梳理与 GSE193613 count 数据案例",
+          "bbox": [
+            0.07,
+            0.39,
+            0.38,
+            0.08
+          ],
+          "font_size": 17,
+          "color": "#2f5f90"
+        },
+        {
+          "role": "body",
+          "text": "用规模、中心、离散、分布和样本结构先建立数据背景，再进入差异分析解释。",
+          "bbox": [
+            0.07,
+            0.55,
+            0.37,
+            0.18
+          ],
+          "font_size": 15,
+          "color": "#233447"
+        }
+      ]
+    },
+    {
+      "slide": 2,
+      "title": "案例数据：规模、分组与测序深度",
+      "layout": "data-check",
+      "visual_intent": "Left-side factual checks with a source-locked library-size figure on the right.",
+      "source_boundary": "grep_required",
+      "background_color": "#fbfcfe",
+      "accent_color": "#2f80ed",
+      "source_layers": [
+        {
+          "path": "wiki/sources/media/image2.png",
+          "bbox": [
+            0.555,
+            0.24,
+            0.335,
+            0.42
+          ],
+          "draw_frame": false,
+          "panel_bbox": [
+            0.52,
+            0.18,
+            0.4,
+            0.58
+          ],
+          "trim_whitespace": true,
+          "fit_margin_px": 32
+        }
+      ],
+      "text_items": [
+        {
+          "role": "title",
+          "text": "案例数据：规模、分组与测序深度",
+          "bbox": [
+            0.06,
+            0.08,
+            0.66,
+            0.08
+          ],
+          "font_size": 25,
+          "bold": true,
+          "color": "#102033"
+        },
+        {
+          "role": "body",
+          "text": "count 矩阵包含 21,975 个基因和 6 个样本\nsaline 对照组：S1、S2、S3\nGlcN/E 给药组：G1、G2、G3\n全零基因 4,718；至少一个样本检出基因 17,257\nlibrary size 范围：28.89M 至 35.51M",
+          "bbox": [
+            0.07,
+            0.24,
+            0.39,
+            0.41
+          ],
+          "font_size": 15,
+          "color": "#17283a"
+        },
+        {
+          "role": "note",
+          "text": "这些数值作为数据检查结果原样保留；raw count 不直接用于样本间强比较。",
+          "bbox": [
+            0.07,
+            0.72,
+            0.39,
+            0.11
+          ],
+          "font_size": 13,
+          "color": "#42627d"
+        }
+      ]
+    },
+    {
+      "slide": 3,
+      "title": "集中趋势与离散程度：均值被长尾拉高",
+      "layout": "center-dispersion",
+      "visual_intent": "Two source-locked result figures with compact evidence bullets.",
+      "source_boundary": "grep_required",
+      "background_color": "#fbfcfe",
+      "accent_color": "#2f80ed",
+      "source_layers": [
+        {
+          "path": "wiki/sources/media/image4.png",
+          "bbox": [
+            0.535,
+            0.205,
+            0.365,
+            0.235
+          ],
+          "draw_frame": false,
+          "panel_bbox": [
+            0.52,
+            0.17,
+            0.4,
+            0.32
+          ],
+          "trim_whitespace": true,
+          "fit_margin_px": 32
+        },
+        {
+          "path": "wiki/sources/media/image5.png",
+          "bbox": [
+            0.535,
+            0.555,
+            0.365,
+            0.235
+          ],
+          "draw_frame": false,
+          "panel_bbox": [
+            0.52,
+            0.52,
+            0.4,
+            0.32
+          ],
+          "trim_whitespace": true,
+          "fit_margin_px": 32
+        }
+      ],
+      "text_items": [
+        {
+          "role": "title",
+          "text": "集中趋势与离散程度：均值被长尾拉高",
+          "bbox": [
+            0.06,
+            0.08,
+            0.72,
+            0.08
+          ],
+          "font_size": 24,
+          "bold": true,
+          "color": "#102033"
+        },
+        {
+          "role": "body",
+          "text": "全矩阵 raw count 均值 1,445.77，中位数 196\n样本均值范围 1,314.61–1,615.95\n样本中位数范围 181–214\n均值/中位数比值约 7.05 至 7.62\nmin = 0，max = 916,158，极差 916,158\n众数 0 出现 37,331 次，占全部观测值 28.31%\n样本 SD 范围 6,821.84–9,843.64；CV 范围 4.52–6.68",
+          "bbox": [
+            0.07,
+            0.23,
+            0.39,
+            0.5
+          ],
+          "font_size": 13.5,
+          "color": "#17283a"
+        },
+        {
+          "role": "note",
+          "text": "均值不是错，但在 RNA-seq raw count 中必须和中位数、IQR、SD/CV 一起读。",
+          "bbox": [
+            0.07,
+            0.78,
+            0.39,
+            0.1
+          ],
+          "font_size": 12.5,
+          "color": "#42627d"
+        }
+      ]
+    },
+    {
+      "slide": 4,
+      "title": "分布与样本结构：log 转换让主体更清楚",
+      "layout": "distribution-structure",
+      "visual_intent": "Three source-locked figures arranged as analysis evidence panels.",
+      "source_boundary": "grep_required",
+      "background_color": "#fbfcfe",
+      "accent_color": "#2f80ed",
+      "source_layers": [
+        {
+          "path": "wiki/sources/media/image8.png",
+          "bbox": [
+            0.515,
+            0.205,
+            0.205,
+            0.255
+          ],
+          "draw_frame": false,
+          "panel_bbox": [
+            0.5,
+            0.17,
+            0.23,
+            0.31
+          ],
+          "trim_whitespace": true,
+          "fit_margin_px": 32
+        },
+        {
+          "path": "wiki/sources/media/image9.png",
+          "bbox": [
+            0.755,
+            0.205,
+            0.17,
+            0.255
+          ],
+          "draw_frame": false,
+          "panel_bbox": [
+            0.74,
+            0.17,
+            0.2,
+            0.31
+          ],
+          "trim_whitespace": true,
+          "fit_margin_px": 32
+        },
+        {
+          "path": "wiki/sources/media/image10.png",
+          "bbox": [
+            0.555,
+            0.575,
+            0.335,
+            0.235
+          ],
+          "draw_frame": false,
+          "panel_bbox": [
+            0.54,
+            0.53,
+            0.37,
+            0.32
+          ],
+          "trim_whitespace": true,
+          "fit_margin_px": 32
+        }
+      ],
+      "text_items": [
+        {
+          "role": "title",
+          "text": "分布与样本结构：log 转换让主体更清楚",
+          "bbox": [
+            0.06,
+            0.08,
+            0.72,
+            0.08
+          ],
+          "font_size": 24,
+          "bold": true,
+          "color": "#102033"
+        },
+        {
+          "role": "body",
+          "text": "raw count：P99 = 16,957.22，max = 916,158，偏度 43.49\nlog2(count + 1)：P99 = 14.05，max = 19.81，偏度 -0.179\nraw count 超额峰度 3,321.49；log2 后超额峰度 -1.48\nedgeR TMM 标准化后 logCPM：Pearson r 范围 0.9839–0.9884\nPCA：PC1 解释 25.7%，PC2 解释 21.6%，合计 47.3%",
+          "bbox": [
+            0.07,
+            0.23,
+            0.36,
+            0.42
+          ],
+          "font_size": 13.5,
+          "color": "#17283a"
+        },
+        {
+          "role": "note",
+          "text": "PCA 用于结构概览和离群观察，不作为显著差异证据。",
+          "bbox": [
+            0.07,
+            0.72,
+            0.36,
+            0.1
+          ],
+          "font_size": 12.5,
+          "color": "#42627d"
+        }
+      ]
+    },
+    {
+      "slide": 5,
+      "title": "结论：描述性统计提供质量背景",
+      "layout": "takeaway",
+      "visual_intent": "Concise takeaways with downstream source-locked result figures.",
+      "source_boundary": "grep_required",
+      "background_color": "#fbfcfe",
+      "accent_color": "#2f80ed",
+      "source_layers": [
+        {
+          "path": "wiki/sources/media/image12.png",
+          "bbox": [
+            0.61,
+            0.225,
+            0.285,
+            0.25
+          ],
+          "draw_frame": false,
+          "panel_bbox": [
+            0.58,
+            0.17,
+            0.35,
+            0.33
+          ],
+          "trim_whitespace": true,
+          "fit_margin_px": 32
+        },
+        {
+          "path": "wiki/sources/media/image13.png",
+          "bbox": [
+            0.535,
+            0.575,
+            0.375,
+            0.245
+          ],
+          "draw_frame": false,
+          "panel_bbox": [
+            0.5,
+            0.52,
+            0.43,
+            0.34
+          ],
+          "trim_whitespace": true,
+          "fit_margin_px": 32
+        }
+      ],
+      "text_items": [
+        {
+          "role": "title",
+          "text": "结论：描述性统计提供质量背景",
+          "bbox": [
+            0.06,
+            0.08,
+            0.72,
+            0.08
+          ],
+          "font_size": 25,
+          "bold": true,
+          "color": "#102033"
+        },
+        {
+          "role": "body",
+          "text": "无缺失值；零计数比例接近；library size 处于同一数量级\nraw count 右偏长尾明显，因此中位数、IQR、log 转换和 logCPM 更稳妥\nIQR 排序最高基因：mt-Co1，IQR = 237,564.75\n21,975 个转录本经筛选后 13,293 个进入分析；DESeq2 得到 321 个差异转录本\nsaline 高表达 147 个，GlcN/E 高表达 174 个",
+          "bbox": [
+            0.07,
+            0.22,
+            0.39,
+            0.43
+          ],
+          "font_size": 13.2,
+          "color": "#17283a"
+        },
+        {
+          "role": "note",
+          "text": "GSEA：IL-17 signaling pathway NES = -1.688，P = 1.484e-03；ECM-receptor interaction NES = 1.606，P = 5.401e-05；Dilated cardiomyopathy NES = 2.055，P = 3.925e-06",
+          "bbox": [
+            0.07,
+            0.7,
+            0.39,
+            0.16
+          ],
+          "font_size": 11.5,
+          "color": "#42627d"
+        }
+      ]
+    }
+  ]
+}

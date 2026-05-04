@@ -57,6 +57,7 @@ If any required field is missing, ask only for the missing fields and stop befor
    This renders the PPTX when local tools are available, compares each rendered page with `completed/`, and writes pixel/patch similarity reports.
    QA also writes `reports/source_layer_audit.md`. This fixed review item checks that source figures stay inside detected/native panels, do not overlap editable text, and do not add duplicate rounded-rectangle frames over native imagegen panels.
    The audit records `declared_panel_bbox`, `detected_panel_bbox`, `actual_panel_bbox`, `panel_bbox`, `fit_bbox`, `paste_bbox`, `margin_px`, `slack_px`, and `center_delta_px` for every source layer.
+9. Perform a brief human detail check after strict QA. Open the final PPTX and scan figure-panel padding, line breaks, font scale, obvious text overflow, page-to-page consistency, and whether source data/results remain unchanged. Treat this as a final polish pass, not as a substitute for strict QA. When the deck is accepted, export the reviewed PowerPoint directly to `pptx/image2slides.pdf` as the canonical visual snapshot so later render/compile conversions do not become the only inspection artifact.
 
 ## Prompt Rules
 

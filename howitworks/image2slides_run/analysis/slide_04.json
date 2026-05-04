@@ -1,0 +1,102 @@
+{
+  "completed": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/completed/slide_04_completed.png",
+  "background": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/background/slide_04_background.png",
+  "width": 2048,
+  "height": 1152,
+  "dominant_background_color": "#f5f6f8",
+  "diff_threshold": 24,
+  "text_regions": [
+    {
+      "bbox": [
+        0.08438,
+        0.08194,
+        0.02344,
+        0.04028
+      ],
+      "area": 327,
+      "dominant_text_color": "#65707c"
+    },
+    {
+      "bbox": [
+        0.13281,
+        0.08194,
+        0.02266,
+        0.04028
+      ],
+      "area": 347,
+      "dominant_text_color": "#7a8691"
+    },
+    {
+      "bbox": [
+        0.20469,
+        0.08194,
+        0.02187,
+        0.03889
+      ],
+      "area": 364,
+      "dominant_text_color": "#5d6875"
+    },
+    {
+      "bbox": [
+        0.29453,
+        0.08194,
+        0.02266,
+        0.04028
+      ],
+      "area": 378,
+      "dominant_text_color": "#6b7580"
+    },
+    {
+      "bbox": [
+        0.31875,
+        0.08194,
+        0.02266,
+        0.04028
+      ],
+      "area": 412,
+      "dominant_text_color": "#636d79"
+    },
+    {
+      "bbox": [
+        0.38984,
+        0.08194,
+        0.02344,
+        0.04028
+      ],
+      "area": 346,
+      "dominant_text_color": "#616b77"
+    },
+    {
+      "bbox": [
+        0.4625,
+        0.08194,
+        0.02187,
+        0.04028
+      ],
+      "area": 444,
+      "dominant_text_color": "#767f8b"
+    },
+    {
+      "bbox": [
+        0.41484,
+        0.08472,
+        0.02187,
+        0.0375
+      ],
+      "area": 386,
+      "dominant_text_color": "#636d79"
+    }
+  ],
+  "blank_regions": [
+    {
+      "bbox": [
+        0.0,
+        0.11111,
+        1.0,
+        0.88889
+      ],
+      "cell_area": 94,
+      "mean_local_std": 5.65
+    }
+  ]
+}

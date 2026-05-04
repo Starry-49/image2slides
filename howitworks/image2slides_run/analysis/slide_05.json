@@ -1,0 +1,112 @@
+{
+  "completed": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/completed/slide_05_completed.png",
+  "background": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/background/slide_05_background.png",
+  "width": 2048,
+  "height": 1152,
+  "dominant_background_color": "#fafbfc",
+  "diff_threshold": 24,
+  "text_regions": [
+    {
+      "bbox": [
+        0.18516,
+        0.08056,
+        0.02344,
+        0.04306
+      ],
+      "area": 396,
+      "dominant_text_color": "#7a828d"
+    },
+    {
+      "bbox": [
+        0.31016,
+        0.08056,
+        0.02266,
+        0.04167
+      ],
+      "area": 390,
+      "dominant_text_color": "#5e6875"
+    },
+    {
+      "bbox": [
+        0.13516,
+        0.08194,
+        0.02422,
+        0.04167
+      ],
+      "area": 499,
+      "dominant_text_color": "#596472"
+    },
+    {
+      "bbox": [
+        0.21016,
+        0.08194,
+        0.02344,
+        0.04028
+      ],
+      "area": 411,
+      "dominant_text_color": "#606b78"
+    },
+    {
+      "bbox": [
+        0.26016,
+        0.08194,
+        0.02344,
+        0.04028
+      ],
+      "area": 446,
+      "dominant_text_color": "#66717d"
+    },
+    {
+      "bbox": [
+        0.28516,
+        0.08194,
+        0.02344,
+        0.04028
+      ],
+      "area": 349,
+      "dominant_text_color": "#4f5a68"
+    },
+    {
+      "bbox": [
+        0.36016,
+        0.08194,
+        0.02266,
+        0.04167
+      ],
+      "area": 410,
+      "dominant_text_color": "#79828c"
+    },
+    {
+      "bbox": [
+        0.33516,
+        0.08333,
+        0.02266,
+        0.03889
+      ],
+      "area": 535,
+      "dominant_text_color": "#707985"
+    },
+    {
+      "bbox": [
+        0.38438,
+        0.08333,
+        0.02344,
+        0.04028
+      ],
+      "area": 437,
+      "dominant_text_color": "#68717d"
+    }
+  ],
+  "blank_regions": [
+    {
+      "bbox": [
+        0.0,
+        0.11111,
+        1.0,
+        0.88889
+      ],
+      "cell_area": 90,
+      "mean_local_std": 5.558
+    }
+  ]
+}

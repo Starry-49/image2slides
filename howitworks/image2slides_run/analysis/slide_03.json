@@ -1,0 +1,122 @@
+{
+  "completed": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/completed/slide_03_completed.png",
+  "background": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/background/slide_03_background.png",
+  "width": 2048,
+  "height": 1152,
+  "dominant_background_color": "#f5f6f8",
+  "diff_threshold": 24,
+  "text_regions": [
+    {
+      "bbox": [
+        0.34766,
+        0.08056,
+        0.02266,
+        0.04028
+      ],
+      "area": 411,
+      "dominant_text_color": "#6e7883"
+    },
+    {
+      "bbox": [
+        0.06094,
+        0.08194,
+        0.02187,
+        0.04028
+      ],
+      "area": 457,
+      "dominant_text_color": "#7b838e"
+    },
+    {
+      "bbox": [
+        0.10859,
+        0.08194,
+        0.02266,
+        0.04028
+      ],
+      "area": 432,
+      "dominant_text_color": "#65707c"
+    },
+    {
+      "bbox": [
+        0.13281,
+        0.08194,
+        0.02187,
+        0.04028
+      ],
+      "area": 375,
+      "dominant_text_color": "#67727e"
+    },
+    {
+      "bbox": [
+        0.18125,
+        0.08194,
+        0.02109,
+        0.04028
+      ],
+      "area": 395,
+      "dominant_text_color": "#717b86"
+    },
+    {
+      "bbox": [
+        0.20391,
+        0.08194,
+        0.02266,
+        0.04028
+      ],
+      "area": 440,
+      "dominant_text_color": "#66707c"
+    },
+    {
+      "bbox": [
+        0.30078,
+        0.08194,
+        0.02109,
+        0.03889
+      ],
+      "area": 320,
+      "dominant_text_color": "#69727f"
+    },
+    {
+      "bbox": [
+        0.32344,
+        0.08194,
+        0.02344,
+        0.04028
+      ],
+      "area": 407,
+      "dominant_text_color": "#596471"
+    },
+    {
+      "bbox": [
+        0.22812,
+        0.08333,
+        0.02266,
+        0.03889
+      ],
+      "area": 406,
+      "dominant_text_color": "#636d7a"
+    },
+    {
+      "bbox": [
+        0.39609,
+        0.08472,
+        0.02187,
+        0.03611
+      ],
+      "area": 363,
+      "dominant_text_color": "#5e6976"
+    }
+  ],
+  "blank_regions": [
+    {
+      "bbox": [
+        0.0,
+        0.11111,
+        1.0,
+        0.88889
+      ],
+      "cell_area": 77,
+      "mean_local_std": 12.742
+    }
+  ]
+}

@@ -139,6 +139,16 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 
    LibreOffice と `pdftoppm` が使える場合、QA は PPTX をローカルでレンダリングし、`completed/` と pixel / patch similarity を比較し、固定の source-layer layout audit も再実行します。
 
+9. 短い human detail check を行います。
+
+   `pptx/image2slides.pptx` を開き、QA が過剰適合すべきでない細部だけを確認します。source 図と panel の見た目の余白、改行、フォントサイズ、明らかなテキストはみ出し、ページ間の一貫性、source data/results が変更されていないことを見ます。この手順は strict QA 後の軽い最終確認であり、QA の代替ではありません。
+
+## Howitworks Example
+
+このリポジトリには、workflow 全体の最小メンタルモデルとして [howitworks/](./howitworks/) を含めています。ナレッジベース文書、抽出テキストと図、構造化 wiki、GPT-image-2 native base、source-locked の completed/background 画像、最終 PPTX、レンダリング結果、QA report、短い example README が入っています。
+
+主な編集可能成果物は [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx) です。human-reviewed の視覚 export は [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf) です。最終的な見た目確認には、この PDF を優先してください。レビュー済み PowerPoint から直接書き出されたもので、後続変換によるずれを避けられます。npm package は軽量に保つため、この大きな example artifact set は含めません。example を確認または再実行する場合は GitHub repo を clone してください。
+
 ## 出力ディレクトリ
 
 ```text

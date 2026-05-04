@@ -1,0 +1,202 @@
+{
+  "completed": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/completed/slide_01_completed.png",
+  "background": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/background/slide_01_background.png",
+  "width": 2048,
+  "height": 1152,
+  "dominant_background_color": "#fefefe",
+  "diff_threshold": 24,
+  "text_regions": [
+    {
+      "bbox": [
+        0.07109,
+        0.17222,
+        0.03203,
+        0.05694
+      ],
+      "area": 807,
+      "dominant_text_color": "#455262"
+    },
+    {
+      "bbox": [
+        0.10547,
+        0.17222,
+        0.03125,
+        0.05556
+      ],
+      "area": 507,
+      "dominant_text_color": "#4f5b69"
+    },
+    {
+      "bbox": [
+        0.31016,
+        0.17222,
+        0.03203,
+        0.05694
+      ],
+      "area": 564,
+      "dominant_text_color": "#4e5967"
+    },
+    {
+      "bbox": [
+        0.14453,
+        0.17361,
+        0.02656,
+        0.05694
+      ],
+      "area": 607,
+      "dominant_text_color": "#4d5967"
+    },
+    {
+      "bbox": [
+        0.17344,
+        0.17361,
+        0.03203,
+        0.05556
+      ],
+      "area": 702,
+      "dominant_text_color": "#4a5664"
+    },
+    {
+      "bbox": [
+        0.27578,
+        0.17361,
+        0.03281,
+        0.05556
+      ],
+      "area": 627,
+      "dominant_text_color": "#4b5766"
+    },
+    {
+      "bbox": [
+        0.39844,
+        0.17361,
+        0.02422,
+        0.04722
+      ],
+      "area": 328,
+      "dominant_text_color": "#2a3849"
+    },
+    {
+      "bbox": [
+        0.35469,
+        0.175,
+        0.01641,
+        0.04583
+      ],
+      "area": 373,
+      "dominant_text_color": "#2d3b4b"
+    },
+    {
+      "bbox": [
+        0.375,
+        0.175,
+        0.02031,
+        0.04583
+      ],
+      "area": 387,
+      "dominant_text_color": "#384655"
+    },
+    {
+      "bbox": [
+        0.24219,
+        0.17639,
+        0.03125,
+        0.05278
+      ],
+      "area": 488,
+      "dominant_text_color": "#44515f"
+    },
+    {
+      "bbox": [
+        0.19687,
+        0.24444,
+        0.02578,
+        0.05972
+      ],
+      "area": 497,
+      "dominant_text_color": "#3f4c5b"
+    },
+    {
+      "bbox": [
+        0.12578,
+        0.24583,
+        0.03125,
+        0.05694
+      ],
+      "area": 809,
+      "dominant_text_color": "#4d5968"
+    },
+    {
+      "bbox": [
+        0.16016,
+        0.24583,
+        0.03125,
+        0.05556
+      ],
+      "area": 820,
+      "dominant_text_color": "#424f5e"
+    },
+    {
+      "bbox": [
+        0.22969,
+        0.24583,
+        0.02891,
+        0.05694
+      ],
+      "area": 607,
+      "dominant_text_color": "#3c4958"
+    },
+    {
+      "bbox": [
+        0.26328,
+        0.24583,
+        0.03047,
+        0.05556
+      ],
+      "area": 561,
+      "dominant_text_color": "#455160"
+    },
+    {
+      "bbox": [
+        0.29844,
+        0.25,
+        0.02813,
+        0.05278
+      ],
+      "area": 660,
+      "dominant_text_color": "#4c5866"
+    },
+    {
+      "bbox": [
+        0.07109,
+        0.25833,
+        0.01953,
+        0.03611
+      ],
+      "area": 326,
+      "dominant_text_color": "#314050"
+    },
+    {
+      "bbox": [
+        0.09375,
+        0.25833,
+        0.01953,
+        0.04583
+      ],
+      "area": 343,
+      "dominant_text_color": "#3b4858"
+    }
+  ],
+  "blank_regions": [
+    {
+      "bbox": [
+        0.0,
+        0.11111,
+        1.0,
+        0.88889
+      ],
+      "cell_area": 78,
+      "mean_local_std": 11.107
+    }
+  ]
+}

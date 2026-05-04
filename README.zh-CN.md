@@ -139,6 +139,16 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 
    QA 会在本地有 LibreOffice 和 `pdftoppm` 时渲染 PPTX，再与 `completed/` 做像素和 patch 相似度比较，并再次执行固定的 source-layer layout audit。
 
+9. 做一次简短人工细节核对。
+
+   打开 `pptx/image2slides.pptx`，只检查自动 QA 不应该过度拟合的小细节：图片和 panel 的视觉留白、换行、字号、明显文字溢出、页面之间的一致性，以及 source data/results 是否仍未被改写。这个步骤是 strict QA 之后的最终轻量审查，不替代 QA。
+
+## Howitworks 示例
+
+仓库内包含 [howitworks/](./howitworks/) 作为完整 workflow 的最小心智模型。它包含知识库文档、抽取文本和图片、结构化 wiki、GPT-image-2 native 底版、source-locked completed/background 图片、最终 PPTX、渲染结果、QA 报告，以及示例说明。
+
+主要可编辑结果是 [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx)。人工审查后的视觉导出是 [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf)；最终看图时优先看这个 PDF，因为它直接来自审查后的 PowerPoint，避免后续转换带来的偏差。npm 包仍保持轻量，不包含这组较大的示例 artifacts；需要检查或复跑示例时请 clone GitHub repo。
+
 ## 输出目录
 
 ```text

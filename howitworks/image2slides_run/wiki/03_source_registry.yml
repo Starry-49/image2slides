@@ -1,0 +1,45 @@
+sources:
+  - id: kb-docx
+    path: wiki/sources/howitworks.docx
+    role: original_user_knowledge_base
+    policy: grep_required
+  - id: extracted-text
+    path: wiki/grep/howitworks_extracted_text.md
+    role: extracted_text_evidence
+    policy: grep_required
+  - id: fig-framework
+    path: wiki/sources/media/image1.png
+    role: descriptive_statistics_framework
+    policy: source_locked
+  - id: fig-library-size
+    path: wiki/sources/media/image2.png
+    role: library_size_result
+    policy: source_locked
+  - id: fig-mean-median-ratio
+    path: wiki/sources/media/image4.png
+    role: mean_median_ratio_result
+    policy: source_locked
+  - id: fig-group-central-tendency
+    path: wiki/sources/media/image5.png
+    role: group_central_tendency_result
+    policy: source_locked
+  - id: fig-distribution
+    path: wiki/sources/media/image8.png
+    role: distribution_histogram_result
+    policy: source_locked
+  - id: fig-correlation
+    path: wiki/sources/media/image9.png
+    role: correlation_heatmap_result
+    policy: source_locked
+  - id: fig-pca
+    path: wiki/sources/media/image10.png
+    role: pca_result
+    policy: source_locked
+  - id: fig-high-variation
+    path: wiki/sources/media/image12.png
+    role: high_variation_result
+    policy: source_locked
+  - id: fig-standard-analysis
+    path: wiki/sources/media/image13.png
+    role: downstream_analysis_result
+    policy: source_locked

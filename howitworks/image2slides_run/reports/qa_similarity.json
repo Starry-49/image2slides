@@ -1,0 +1,52 @@
+{
+  "created_at": "2026-05-04T10:27:48.261154+00:00",
+  "pptx": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/pptx/image2slides.pptx",
+  "threshold": 0.82,
+  "slides": [
+    {
+      "slide": 1,
+      "status": "ok",
+      "completed": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/completed/slide_01_completed.png",
+      "rendered": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/reports/rendered/slide-1.png",
+      "pixel_similarity": 0.97748,
+      "patch_similarity": 0.99431,
+      "mae": 5.742
+    },
+    {
+      "slide": 2,
+      "status": "ok",
+      "completed": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/completed/slide_02_completed.png",
+      "rendered": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/reports/rendered/slide-2.png",
+      "pixel_similarity": 0.98387,
+      "patch_similarity": 0.99782,
+      "mae": 4.114
+    },
+    {
+      "slide": 3,
+      "status": "ok",
+      "completed": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/completed/slide_03_completed.png",
+      "rendered": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/reports/rendered/slide-3.png",
+      "pixel_similarity": 0.98254,
+      "patch_similarity": 0.99773,
+      "mae": 4.453
+    },
+    {
+      "slide": 4,
+      "status": "ok",
+      "completed": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/completed/slide_04_completed.png",
+      "rendered": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/reports/rendered/slide-4.png",
+      "pixel_similarity": 0.98208,
+      "patch_similarity": 0.99717,
+      "mae": 4.57
+    },
+    {
+      "slide": 5,
+      "status": "ok",
+      "completed": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/completed/slide_05_completed.png",
+      "rendered": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/reports/rendered/slide-5.png",
+      "pixel_similarity": 0.98022,
+      "patch_similarity": 0.99755,
+      "mae": 5.043
+    }
+  ]
+}

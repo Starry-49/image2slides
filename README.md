@@ -139,6 +139,16 @@ Use [examples/spec.example.json](./examples/spec.example.json) as the starting s
 
    QA renders the PPTX locally when LibreOffice and `pdftoppm` are available, compares rendered slides with `completed/` using pixel and patch similarity, and repeats the fixed source-layer layout audit.
 
+9. Do a brief human detail check.
+
+   Open `pptx/image2slides.pptx` and scan for the small details that automated QA should not overfit: figure-panel visual padding, line breaks, font scale, obvious text overflow, page-to-page consistency, and whether source data/results remain unchanged. Keep this as a short final review pass after strict QA, not as a replacement for QA.
+
+## Howitworks Example
+
+The repository includes [howitworks/](./howitworks/) as a minimal mental model of the full workflow. It contains the knowledge-base document, extracted text and figures, structured wiki, GPT-image-2 native bases, source-locked completed/background images, final PPTX, rendered slides, QA reports, and a short example README.
+
+The main editable result is [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx). The human-reviewed visual export is [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf); prefer that PDF for final visual inspection because it comes directly from the reviewed PowerPoint deck and avoids later conversion drift. The npm package stays lightweight and does not include this large example artifact set; clone the GitHub repo when you want to inspect or rerun the example.
+
 ## Output Directory Map
 
 ```text

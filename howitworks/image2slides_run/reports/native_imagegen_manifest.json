@@ -1,0 +1,30 @@
+{
+  "native_imagegen": "Codex native image_gen GPT-image-2 path",
+  "copied": [
+    {
+      "slide": 1,
+      "source": "/Users/starry/.codex/generated_images/019df1fe-085a-7562-8deb-f9e5cecb8001/ig_0721f1888feab1620169f861891a6c8191ad33508df42765fe.png",
+      "dest": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/tmp/native_imagegen/slide_01_base.png"
+    },
+    {
+      "slide": 2,
+      "source": "/Users/starry/.codex/generated_images/019df1fe-085a-7562-8deb-f9e5cecb8001/ig_0721f1888feab1620169f861b30c2481918e83a3e7aa5819ac.png",
+      "dest": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/tmp/native_imagegen/slide_02_base.png"
+    },
+    {
+      "slide": 3,
+      "source": "/Users/starry/.codex/generated_images/019df1fe-085a-7562-8deb-f9e5cecb8001/ig_0721f1888feab1620169f861dc5b288191be0e0febd151cee6.png",
+      "dest": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/tmp/native_imagegen/slide_03_base.png"
+    },
+    {
+      "slide": 4,
+      "source": "/Users/starry/.codex/generated_images/019df1fe-085a-7562-8deb-f9e5cecb8001/ig_0721f1888feab1620169f8620a30dc81919f227fb7a631e4c5.png",
+      "dest": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/tmp/native_imagegen/slide_04_base.png"
+    },
+    {
+      "slide": 5,
+      "source": "/Users/starry/.codex/generated_images/019df1fe-085a-7562-8deb-f9e5cecb8001/ig_0721f1888feab1620169f8623f80c08191aafc128caa9364db.png",
+      "dest": "/Users/starry/Desktop/codex/image2slides/howitworks/image2slides_run/tmp/native_imagegen/slide_05_base.png"
+    }
+  ]
+}
