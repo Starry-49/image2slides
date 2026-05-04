@@ -17,7 +17,10 @@ This folder is a committed minimal mental model for the Image2Slides workflow. I
 - `image2slides_run/background/`: text-free slide backgrounds.
 - `image2slides_run/pptx/image2slides.pptx`: final editable PowerPoint deck.
 - `image2slides_run/pptx/image2slides.pdf`: final human-reviewed PDF export from PowerPoint. Prefer this file when inspecting the accepted visual result because it reflects the reviewed deck directly and avoids a later LibreOffice/render conversion drift.
+- `image2slides_run/pptx/image2slides_preview.png`: README preview contact sheet rendered from the reviewed PDF.
 - `image2slides_run/reports/`: rendered slides, similarity QA, source-layer audit, and data-lock report.
+
+![Reviewed PDF preview](./image2slides_run/pptx/image2slides_preview.png)
 
 ## Rebuild Shape
 

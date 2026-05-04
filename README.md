@@ -147,6 +147,8 @@ Use [examples/spec.example.json](./examples/spec.example.json) as the starting s
 
 The repository includes [howitworks/](./howitworks/) as a minimal mental model of the full workflow. It contains the knowledge-base document, extracted text and figures, structured wiki, GPT-image-2 native bases, source-locked completed/background images, final PPTX, rendered slides, QA reports, and a short example README.
 
+![Howitworks reviewed PDF preview](./howitworks/image2slides_run/pptx/image2slides_preview.png)
+
 The main editable result is [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx). The human-reviewed visual export is [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf); prefer that PDF for final visual inspection because it comes directly from the reviewed PowerPoint deck and avoids later conversion drift. The npm package stays lightweight and does not include this large example artifact set; clone the GitHub repo when you want to inspect or rerun the example.
 
 ## Output Directory Map
