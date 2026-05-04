@@ -6,7 +6,7 @@
 
 **语言:** [English](./README.md) | 中文 | [日本語](./README.ja.md)
 
-Image2Slides 是一个 Codex plugin 和 CLI workflow，用于把 GPT-image 生成的完整 slides 参考图转成可编辑 PowerPoint。它先生成完整 slide 图，再生成严格对齐的无文字 background 图，随后把文字作为可编辑 PPT 文本浮在背景之上，最后用渲染结果和 completed 参考图做像素/patch 级验收。
+Image2Slides 是一个 Codex plugin 和 CLI workflow，用于把 GPT-image slide 视觉结果转成可编辑 PowerPoint。它默认用 Codex native `image_gen` 生成 GPT-image-2 视觉底版，保持 source-locked 数据图表不被改写，再把文字作为可编辑 PPT 文本浮在匹配 background 之上，最后用渲染结果和 completed 参考图做像素/patch 级验收。
 
 Plugin 入口是 `/image2slides`，核心说明在 [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md)，确定性脚本在 [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py)。
 
@@ -28,7 +28,7 @@ PYTHONPATH=skills/image2slides/scripts python3 tests/test_image2slides.py
 python3 skills/image2slides/scripts/image2slides.py doctor
 ```
 
-真实 GPT-image-2 调用需要系统 Image Gen skill CLI、当前 Python 环境里的 OpenAI SDK，以及 `OPENAI_API_KEY`。dry-run、项目初始化、图像分析、PPTX 生成和本地 QA 不需要 API key。
+默认 GPT-image-2 调用走 Codex native `image_gen`，不需要 `OPENAI_API_KEY`。OpenAI SDK/API-key CLI 只是显式需要 API/SDK 执行时的 fallback。
 
 ## 用户必填输入
 
@@ -69,16 +69,28 @@ python3 skills/image2slides/scripts/image2slides.py doctor
    - `prompts/completed_prompts.jsonl`
    - `prompts/background_edit_prompts.jsonl`
 
-4. 用 GPT-image-2 生成 completed slide 参考图：
+4. 用 Codex native `image_gen` 生成 GPT-image-2 视觉底版。
+
+   默认 plugin workflow 使用 Codex native image generation，不需要 `OPENAI_API_KEY`。把每张无文字视觉底版复制到：
+
+   - `tmp/native_imagegen/slide_XX_base.png`
+
+   对于不能改写的数据/结果，把原始图表放在 `wiki/sources/`，再组合到底版上：
+
+   ```bash
+   image2slides compose-source-locked --project decks/my-deck --base-dir tmp/native_imagegen
+   ```
+
+   输出到 `completed/slide_XX_completed.png` 和 `background/slide_XX_background.png`。
+
+5. 可选 API CLI fallback：
 
    ```bash
    image2slides imagegen --project decks/my-deck --phase completed --dry-run
    image2slides imagegen --project decks/my-deck --phase completed --execute
    ```
 
-   输出到 `completed/slide_XX_completed.png`。
-
-5. 基于 completed 图编辑生成无文字 background：
+   也可以基于 completed 图编辑生成无文字 background：
 
    ```bash
    image2slides imagegen --project decks/my-deck --phase background --dry-run

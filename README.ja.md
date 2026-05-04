@@ -6,7 +6,7 @@
 
 **Languages:** [English](./README.md) | [中文](./README.zh-CN.md) | 日本語
 
-Image2Slides は、GPT-image で生成したスライド参照画像を編集可能な PowerPoint に変換する Codex plugin と CLI workflow です。完成版スライド画像を視覚ターゲットとして作り、そこから文字なし背景を生成し、その背景の上に編集可能な PowerPoint テキストを配置し、最後にレンダリング結果を参照画像と比較して検証します。
+Image2Slides は、GPT-image のスライド視覚結果を編集可能な PowerPoint に変換する Codex plugin と CLI workflow です。デフォルトでは Codex native `image_gen` で GPT-image-2 の視覚ベースを生成し、source-locked のデータ図を正確に保持し、対応する background の上に編集可能な PowerPoint テキストを配置して、最後にレンダリング結果を参照画像と比較します。
 
 Plugin の入口は `/image2slides` です。手順は [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md)、決定的な処理を行う CLI は [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py) にあります。
 
@@ -28,7 +28,7 @@ PYTHONPATH=skills/image2slides/scripts python3 tests/test_image2slides.py
 python3 skills/image2slides/scripts/image2slides.py doctor
 ```
 
-実際に GPT-image-2 を呼び出すには、system Image Gen skill CLI、現在の Python 環境の OpenAI SDK、そして `OPENAI_API_KEY` が必要です。dry-run、プロジェクト初期化、画像解析、PPTX 生成、ローカル QA は API key なしで実行できます。
+デフォルトの GPT-image-2 実行は Codex native `image_gen` を使うため、`OPENAI_API_KEY` は不要です。OpenAI SDK/API-key CLI は、API/SDK 実行を明示的に使う場合だけの fallback です。
 
 ## 必須入力
 
@@ -69,16 +69,28 @@ python3 skills/image2slides/scripts/image2slides.py doctor
    - `prompts/completed_prompts.jsonl`
    - `prompts/background_edit_prompts.jsonl`
 
-4. GPT-image-2 で completed slide 参照画像を生成します。
+4. Codex native `image_gen` で GPT-image-2 の視覚ベースを生成します。
+
+   デフォルトの plugin workflow は Codex native image generation を使うため、`OPENAI_API_KEY` は不要です。生成した文字なしの視覚ベースを次の場所にコピーします。
+
+   - `tmp/native_imagegen/slide_XX_base.png`
+
+   変更してはいけないデータや結果は元の図を `wiki/sources/` に置き、ベース画像へ合成します。
+
+   ```bash
+   image2slides compose-source-locked --project decks/my-deck --base-dir tmp/native_imagegen
+   ```
+
+   出力先は `completed/slide_XX_completed.png` と `background/slide_XX_background.png` です。
+
+5. 任意の API CLI fallback:
 
    ```bash
    image2slides imagegen --project decks/my-deck --phase completed --dry-run
    image2slides imagegen --project decks/my-deck --phase completed --execute
    ```
 
-   出力先は `completed/slide_XX_completed.png` です。
-
-5. completed 画像を編集して文字なし background を生成します。
+   completed 画像を編集して文字なし background を生成することもできます。
 
    ```bash
    image2slides imagegen --project decks/my-deck --phase background --dry-run

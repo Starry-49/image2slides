@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 import zipfile
 import unittest
 
 from PIL import Image, ImageDraw
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills/image2slides/scripts"))
 import image2slides
 
 
@@ -100,6 +102,57 @@ class Image2SlidesTests(unittest.TestCase):
                 slide_xml = archive.read("ppt/slides/slide1.xml").decode("utf-8")
                 self.assertIn("<p:bg>", slide_xml)
                 self.assertIn("TITLE", slide_xml)
+
+    def test_build_blocks_control_plane_text(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+            make_pair(project, 1, text="deep navy")
+
+            plan_path = project / "wiki/04_slide_plan.json"
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["slides"][0]["text_items"] = [
+                {"role": "title", "text": "deep navy, medical blue, clean academic", "font_size": 24, "bold": True}
+            ]
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+            run_cli(["analyze", "--project", str(project), "--threshold", "18", "--min-area", "20"])
+            with self.assertRaises(SystemExit):
+                run_cli(["build-pptx", "--project", str(project)])
+            lint = json.loads((project / "reports/internal_text_lint.json").read_text(encoding="utf-8"))
+            self.assertGreater(lint["issue_count"], 0)
+
+    def test_compose_source_locked_creates_image_pairs(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            source = project / "wiki/sources/source.png"
+            Image.new("RGB", (80, 60), "#2f80ed").save(source)
+            base_dir = project / "tmp/native_imagegen"
+            base_dir.mkdir(parents=True)
+            Image.new("RGB", (2048, 1152), "#eef6ff").save(base_dir / "slide_01_base.png")
+            plan_path = project / "wiki/04_slide_plan.json"
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["slides"][0].update(
+                {
+                    "background_color": "#fbfcfe",
+                    "source_layers": [{"path": "wiki/sources/source.png", "bbox": [0.55, 0.2, 0.32, 0.42]}],
+                    "text_items": [
+                        {"role": "title", "text": "Source-locked result", "bbox": [0.08, 0.13, 0.42, 0.12]},
+                        {"role": "body", "text": "Exact figure remains a placed source layer.", "bbox": [0.08, 0.28, 0.42, 0.2]},
+                    ],
+                }
+            )
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+            run_cli(["compose-source-locked", "--project", str(project), "--base-dir", str(base_dir)])
+            self.assertTrue((project / "completed/slide_01_completed.png").exists())
+            self.assertTrue((project / "background/slide_01_background.png").exists())
 
 
 class tempfile_dir:

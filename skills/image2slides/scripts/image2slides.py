@@ -24,9 +24,11 @@ from html import escape as xml_escape
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageDraw, ImageFont
 except Exception:  # pragma: no cover - exercised by users without Pillow.
     Image = None  # type: ignore
+    ImageDraw = None  # type: ignore
+    ImageFont = None  # type: ignore
 
 try:
     import numpy as np
@@ -73,7 +75,7 @@ def die(message: str, code: int = 1) -> None:
 
 
 def require_image_libs() -> None:
-    if Image is None:
+    if Image is None or ImageDraw is None or ImageFont is None:
         die("Pillow is required for image analysis. Install pillow or use the Codex bundled Python.")
     if np is None:
         die("numpy is required for image analysis. Install numpy or use the Codex bundled Python.")
@@ -345,9 +347,11 @@ def slide_plan(project: Path) -> Dict[str, Any]:
 
 def base_prompt(spec: Dict[str, Any]) -> str:
     return (
-        f"Use case: productivity-visual. Asset type: full-slide {spec['aspect_ratio_normalized']} "
-        f"presentation composition. Style and tone: {spec['style_tone']}. Purpose: {spec['purpose']}. "
-        f"Scene: {spec['scene']}. Use the supplied wiki as the knowledge boundary. "
+        "Use case: productivity-visual. "
+        f"Non-visible setup metadata: asset type is a full-slide {spec['aspect_ratio_normalized']} "
+        f"presentation composition; style/tone is {spec['style_tone']}; purpose is {spec['purpose']}; "
+        f"scene is {spec['scene']}. These setup metadata values are instructions only and must never be "
+        "rendered as readable slide text. Use the supplied wiki as the knowledge boundary. "
         "Respect source boundaries: factual claims must come from grep_required material; generated content "
         "may only provide visual metaphor, pacing, and non-factual scaffolding."
     )
@@ -368,6 +372,9 @@ def completed_prompt(spec: Dict[str, Any], slide: Dict[str, Any]) -> str:
         + f"Source boundary: {slide.get('source_boundary', 'mixed')}\n"
         + "Create a polished complete slide reference image with the following exact visible text.\n"
         + f"Text (verbatim):\n{text_block}\n"
+        + "Visible text rule: render only the text listed above. Do not add setup labels, style/tone names, "
+        + "aspect ratio, page count, purpose, scene, knowledge-base paths, plugin names, workflow names, "
+        + "validation marks, file names, watermarks, or badges.\n"
         + "Constraints: professional slide composition, no logos unless provided in the wiki, no unsupported data, "
         + "no patient identifiers, no watermark."
     )
@@ -382,6 +389,310 @@ def background_prompt(slide: Dict[str, Any]) -> str:
         "The output must be a text-free background for editable PowerPoint overlays.\n"
         "The only difference from the input should be the absence of text."
     )
+
+
+def _flatten_values(value: Any) -> List[str]:
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        items: List[str] = []
+        for item in value:
+            items.extend(_flatten_values(item))
+        return items
+    if isinstance(value, dict):
+        items = []
+        for item in value.values():
+            items.extend(_flatten_values(item))
+        return items
+    return [str(value)]
+
+
+def internal_visible_terms(spec: Dict[str, Any]) -> List[str]:
+    """Return control-plane terms that should not appear as slide copy."""
+    raw_terms: List[str] = []
+    for key in ("style_tone", "aspect_ratio", "aspect_ratio_normalized", "purpose", "scene", "knowledge_base"):
+        raw_terms.extend(_flatten_values(spec.get(key)))
+
+    slide_count = spec.get("slide_count")
+    if slide_count is not None:
+        raw_terms.extend(
+            [
+                f"{slide_count} pages",
+                f"{slide_count} page",
+                f"{slide_count} slides",
+                f"{slide_count} slide",
+                f"{slide_count} 页",
+                f"{slide_count}页",
+                f"{slide_count}枚",
+            ]
+        )
+
+    raw_terms.extend(
+        [
+            "Image2Slides",
+            "image2slides",
+            "minimal validation",
+            "plugin validation",
+            "workflow validation",
+            "最小验证",
+            "最小心智验证",
+            "白色系课堂汇报",
+            "课堂汇报｜",
+            "howitworks.docx",
+            "spec.json",
+        ]
+    )
+
+    terms: List[str] = []
+    seen = set()
+    for term in raw_terms:
+        clean = str(term).strip()
+        if len(clean) < 3:
+            continue
+        key = clean.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        terms.append(clean)
+        path_name = Path(clean).name
+        if path_name != clean and len(path_name) >= 3 and path_name.lower() not in seen:
+            seen.add(path_name.lower())
+            terms.append(path_name)
+    return terms
+
+
+def visible_text_items(plan: Dict[str, Any]) -> List[Tuple[int, str, str]]:
+    items: List[Tuple[int, str, str]] = []
+    for slide in plan.get("slides", []):
+        slide_no = int(slide.get("slide", len(items) + 1))
+        for item in slide.get("text_items", []):
+            role = str(item.get("role", "text"))
+            text = str(item.get("text", ""))
+            if text.strip():
+                items.append((slide_no, role, text))
+    return items
+
+
+def lint_visible_text(project: Path) -> Dict[str, Any]:
+    spec = load_project(project)
+    plan = slide_plan(project)
+    terms = internal_visible_terms(spec)
+    issues = []
+    for slide_no, role, text in visible_text_items(plan):
+        lower = text.lower()
+        for term in terms:
+            if term.lower() in lower:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "role": role,
+                        "term": term,
+                        "text": text,
+                        "reason": "control-plane input appears in visible slide text",
+                    }
+                )
+    return {"created_at": now_iso(), "issue_count": len(issues), "issues": issues}
+
+
+def write_lint_report(project: Path, report: Dict[str, Any]) -> None:
+    write_json(project / "reports/internal_text_lint.json", report)
+    lines = [
+        "# Internal Text Lint",
+        "",
+        f"- Issues: {report['issue_count']}",
+        "",
+        "| Slide | Role | Term | Reason |",
+        "| --- | --- | --- | --- |",
+    ]
+    for issue in report["issues"]:
+        lines.append(
+            f"| {issue['slide']} | {issue['role']} | `{issue['term']}` | {issue['reason']} |"
+        )
+    (project / "reports/internal_text_lint.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def cmd_lint_visible(args: argparse.Namespace) -> None:
+    project = Path(args.project).resolve()
+    report = lint_visible_text(project)
+    write_lint_report(project, report)
+    print(f"Wrote {project / 'reports/internal_text_lint.json'}")
+    print(f"Wrote {project / 'reports/internal_text_lint.md'}")
+    if args.strict and report["issue_count"]:
+        die(f"visible text contains {report['issue_count']} internal/control-plane term(s)")
+
+
+def parse_image_size(size: str) -> Tuple[int, int]:
+    parts = str(size).lower().replace(" ", "").split("x")
+    if len(parts) != 2:
+        die(f"Cannot compose local images for non-explicit size: {size}")
+    try:
+        width, height = int(parts[0]), int(parts[1])
+    except ValueError:
+        die(f"Cannot compose local images for non-explicit size: {size}")
+    if width <= 0 or height <= 0:
+        die(f"Cannot compose local images for non-explicit size: {size}")
+    return width, height
+
+
+def rgb(value: str, fallback: str = "#fbfcfe") -> Tuple[int, int, int]:
+    raw = str(value or fallback).strip().lstrip("#")
+    if len(raw) != 6:
+        raw = fallback.lstrip("#")
+    try:
+        return tuple(int(raw[i : i + 2], 16) for i in (0, 2, 4))  # type: ignore[return-value]
+    except Exception:
+        return tuple(int(fallback.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))  # type: ignore[return-value]
+
+
+def resolve_project_path(project: Path, raw: str) -> Path:
+    path = Path(raw).expanduser()
+    if path.is_absolute():
+        return path
+    return project / path
+
+
+def normalized_to_pixels(bbox: Sequence[float], width: int, height: int) -> Tuple[int, int, int, int]:
+    if len(bbox) != 4:
+        die(f"bbox must have four values: {bbox}")
+    x, y, w, h = [float(v) for v in bbox]
+    return (
+        int(round(x * width)),
+        int(round(y * height)),
+        int(round((x + w) * width)),
+        int(round((y + h) * height)),
+    )
+
+
+def load_compose_font(size_px: int) -> Any:
+    candidates = [
+        "/System/Library/Fonts/PingFang.ttc",
+        "/System/Library/Fonts/STHeiti Light.ttc",
+        "/Library/Fonts/Arial Unicode.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+    ]
+    for candidate in candidates:
+        if Path(candidate).exists():
+            try:
+                return ImageFont.truetype(candidate, size=size_px, index=0)  # type: ignore[name-defined]
+            except Exception:
+                continue
+    return ImageFont.load_default()  # type: ignore[name-defined]
+
+
+def draw_wrapped(draw: Any, text: str, box: Tuple[int, int, int, int], font_obj: Any, fill: Tuple[int, int, int]) -> None:
+    x0, y0, x1, y1 = box
+    max_width = max(1, x1 - x0)
+    line_height = max(14, int(getattr(font_obj, "size", 14) * 1.2))
+    lines: List[str] = []
+    for raw_line in str(text).splitlines():
+        current = ""
+        for char in raw_line:
+            candidate = current + char
+            try:
+                width = draw.textlength(candidate, font=font_obj)
+            except Exception:
+                width = len(candidate) * 8
+            if width <= max_width or not current:
+                current = candidate
+            else:
+                lines.append(current)
+                current = char
+        lines.append(current)
+    y = y0
+    for line in lines:
+        if y + line_height > y1:
+            break
+        draw.text((x0, y), line, font=font_obj, fill=fill)
+        y += line_height
+
+
+def fit_source_image(path: Path, box: Tuple[int, int, int, int]) -> "Image.Image":
+    source = Image.open(path).convert("RGB")
+    x0, y0, x1, y1 = box
+    target_w = max(1, x1 - x0)
+    target_h = max(1, y1 - y0)
+    source.thumbnail((target_w, target_h), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGB", (target_w, target_h), (255, 255, 255))
+    canvas.paste(source, ((target_w - source.width) // 2, (target_h - source.height) // 2))
+    return canvas
+
+
+def load_base_background(project: Path, raw_base_dir: Optional[str], slide_no: int, size: Tuple[int, int], fallback_color: Tuple[int, int, int]) -> "Image.Image":
+    if not raw_base_dir:
+        return Image.new("RGB", size, fallback_color)
+    base_dir = resolve_project_path(project, raw_base_dir)
+    candidates = [
+        base_dir / f"slide_{slide_no:02d}_base.png",
+        base_dir / f"slide_{slide_no:02d}_background.png",
+        base_dir / f"slide_{slide_no:02d}.png",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            base = Image.open(candidate).convert("RGB")
+            if base.size != size:
+                base = base.resize(size, Image.Resampling.LANCZOS)
+            return base
+    die(f"base background not found for slide {slide_no}: {base_dir}")
+
+
+def draw_text_items(image: "Image.Image", slide: Dict[str, Any]) -> None:
+    draw = ImageDraw.Draw(image)  # type: ignore[name-defined]
+    width, height = image.size
+    for item in slide.get("text_items", []):
+        text = str(item.get("text", "")).strip()
+        if not text:
+            continue
+        bbox = item.get("bbox") or default_bbox(str(item.get("role", "body")), 0)
+        box = normalized_to_pixels(bbox, width, height)
+        size_px = max(12, int(round(float(item.get("font_size") or 14) * 2.05)))
+        font_obj = load_compose_font(size_px)
+        draw_wrapped(draw, text, box, font_obj, rgb(str(item.get("color", "#152033")), "#152033"))
+
+
+def cmd_compose_source_locked(args: argparse.Namespace) -> None:
+    require_image_libs()
+    project = Path(args.project).resolve()
+    spec = load_project(project)
+    plan = slide_plan(project)
+    width, height = parse_image_size(spec["image_size"])
+    bg_dir = project / "background"
+    completed_dir = project / "completed"
+    bg_dir.mkdir(parents=True, exist_ok=True)
+    completed_dir.mkdir(parents=True, exist_ok=True)
+
+    for slide in plan.get("slides", []):
+        slide_no = int(slide["slide"])
+        background_color = rgb(str(slide.get("background_color", "#fbfcfe")), "#fbfcfe")
+        background = load_base_background(project, args.base_dir, slide_no, (width, height), background_color)
+        draw = ImageDraw.Draw(background)  # type: ignore[name-defined]
+        accent = rgb(str(slide.get("accent_color", "#2f80ed")), "#2f80ed")
+        if slide.get("draw_accent", True):
+            draw.rectangle((0, 0, width, max(8, int(height * 0.017))), fill=accent)
+
+        for layer in slide.get("source_layers", []):
+            raw_path = str(layer.get("path", "")).strip()
+            if not raw_path:
+                continue
+            source_path = resolve_project_path(project, raw_path)
+            if not source_path.exists():
+                die(f"source layer not found for slide {slide_no}: {source_path}")
+            box = normalized_to_pixels(layer.get("bbox", []), width, height)
+            pad = int(layer.get("padding_px", 20))
+            radius = int(layer.get("radius_px", 24))
+            draw.rounded_rectangle(box, radius=radius, fill=(255, 255, 255), outline=rgb("#d9e3ef"), width=2)
+            inner = (box[0] + pad, box[1] + pad, box[2] - pad, box[3] - pad)
+            if inner[2] <= inner[0] or inner[3] <= inner[1]:
+                inner = box
+            fitted = fit_source_image(source_path, inner)
+            background.paste(fitted, inner[:2])
+
+        completed = background.copy()
+        draw_text_items(completed, slide)
+        background.save(bg_dir / f"slide_{slide_no:02d}_background.png")
+        completed.save(completed_dir / f"slide_{slide_no:02d}_completed.png")
+
+    print(f"Wrote source-locked backgrounds to {bg_dir}")
+    print(f"Wrote completed references to {completed_dir}")
 
 
 def cmd_queue(args: argparse.Namespace) -> None:
@@ -429,7 +740,10 @@ def run_command(command: Sequence[str], *, dry_run: bool) -> None:
     if dry_run:
         print(json.dumps({"command": list(command)}, ensure_ascii=False))
         return
-    subprocess.run(command, check=True)
+    try:
+        subprocess.run(command, check=True)
+    except subprocess.CalledProcessError as exc:
+        die(f"imagegen CLI failed with exit code {exc.returncode}: {' '.join(command)}", exc.returncode)
 
 
 def cmd_imagegen(args: argparse.Namespace) -> None:
@@ -895,6 +1209,13 @@ def image_extension(path: Path) -> str:
 def build_pptx(project: Path, out_path: Path) -> None:
     spec = load_project(project)
     plan = slide_plan(project)
+    lint_report = lint_visible_text(project)
+    write_lint_report(project, lint_report)
+    if lint_report["issue_count"]:
+        die(
+            "Visible text contains control-plane/internal terms. "
+            f"See {project / 'reports/internal_text_lint.md'}."
+        )
     slide_w = float(spec["slide_size_inches"]["width"])
     slide_h = float(spec["slide_size_inches"]["height"])
     slides = plan["slides"]
@@ -1109,16 +1430,18 @@ def cmd_qa(args: argparse.Namespace) -> None:
 
 def cmd_doctor(args: argparse.Namespace) -> None:
     checks = {
+        "native_imagegen_default": True,
         "pillow": Image is not None,
         "numpy": np is not None,
-        "openai_sdk": importlib.util.find_spec("openai") is not None,
         "soffice": bool(find_tool("soffice") or find_tool("libreoffice")),
         "pdftoppm": bool(find_tool("pdftoppm")),
-        "openai_api_key": bool(os.getenv("OPENAI_API_KEY")),
-        "imagegen_cli": default_imagegen_cli().exists(),
+        "api_fallback_openai_sdk": importlib.util.find_spec("openai") is not None,
+        "api_fallback_openai_api_key": bool(os.getenv("OPENAI_API_KEY")),
+        "api_fallback_imagegen_cli": default_imagegen_cli().exists(),
     }
     print(json.dumps(checks, indent=2, sort_keys=True))
-    if args.strict and not all(checks.values()):
+    required = ("native_imagegen_default", "pillow", "numpy")
+    if args.strict and not all(checks[key] for key in required):
         die("Doctor checks failed")
 
 
@@ -1135,6 +1458,16 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("queue", help="Write GPT-image-2 prompt queues")
     p.add_argument("--project", required=True)
     p.set_defaults(func=cmd_queue)
+
+    p = sub.add_parser("lint-visible", help="Check that control-plane inputs do not appear as slide text")
+    p.add_argument("--project", required=True)
+    p.add_argument("--strict", action="store_true")
+    p.set_defaults(func=cmd_lint_visible)
+
+    p = sub.add_parser("compose-source-locked", help="Compose source-locked completed/background refs from the slide plan")
+    p.add_argument("--project", required=True)
+    p.add_argument("--base-dir", help="Optional GPT-image-2 native background base directory")
+    p.set_defaults(func=cmd_compose_source_locked)
 
     p = sub.add_parser("imagegen", help="Run or preview GPT-image-2 imagegen calls")
     p.add_argument("--project", required=True)

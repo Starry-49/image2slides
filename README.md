@@ -6,7 +6,7 @@
 
 **Languages:** English | [中文](./README.zh-CN.md) | [日本語](./README.ja.md)
 
-Image2Slides is a Codex plugin and CLI workflow for turning GPT-image slide references into editable PowerPoint decks. It uses full-slide generated images as visual targets, derives matching text-free backgrounds, places editable PowerPoint text above those backgrounds, and verifies the final deck against the reference images.
+Image2Slides is a Codex plugin and CLI workflow for turning GPT-image slide visuals into editable PowerPoint decks. It uses Codex native `image_gen` for GPT-image-2 visual bases, keeps source-locked data figures exact, places editable PowerPoint text above matched backgrounds, and verifies the final deck against reference images.
 
 The plugin entrypoint is `/image2slides`, implemented by [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md). The deterministic helper CLI is [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py).
 
@@ -28,7 +28,7 @@ PYTHONPATH=skills/image2slides/scripts python3 tests/test_image2slides.py
 python3 skills/image2slides/scripts/image2slides.py doctor
 ```
 
-Real GPT-image-2 execution requires the system Image Gen skill CLI, the OpenAI SDK in the active Python environment, and `OPENAI_API_KEY`. Dry-runs, project initialization, image analysis, PPTX assembly, and local QA do not require an API key.
+Default GPT-image-2 execution uses Codex native `image_gen` and does not require `OPENAI_API_KEY`. The OpenAI SDK/API-key CLI path is an optional fallback only when you explicitly want API/SDK execution outside the native Codex imagegen path.
 
 ## Required User Inputs
 
@@ -69,16 +69,28 @@ Use [examples/spec.example.json](./examples/spec.example.json) as the starting s
    - `prompts/completed_prompts.jsonl`
    - `prompts/background_edit_prompts.jsonl`
 
-4. Generate completed slide references with GPT-image-2:
+4. Generate GPT-image-2 visual bases with Codex native `image_gen`.
+
+   The default plugin workflow uses Codex native image generation, so it does not require `OPENAI_API_KEY`. Copy each generated text-free visual base into:
+
+   - `tmp/native_imagegen/slide_XX_base.png`
+
+   For source-locked data/results, keep original figures in `wiki/sources/` and compose them onto the generated bases:
+
+   ```bash
+   image2slides compose-source-locked --project decks/my-deck --base-dir tmp/native_imagegen
+   ```
+
+   Results land in `completed/slide_XX_completed.png` and `background/slide_XX_background.png`.
+
+5. Optional API CLI fallback:
 
    ```bash
    image2slides imagegen --project decks/my-deck --phase completed --dry-run
    image2slides imagegen --project decks/my-deck --phase completed --execute
    ```
 
-   Results land in `completed/slide_XX_completed.png`.
-
-5. Generate text-free backgrounds by editing each completed slide:
+   Generate text-free backgrounds by editing each completed slide:
 
    ```bash
    image2slides imagegen --project decks/my-deck --phase background --dry-run

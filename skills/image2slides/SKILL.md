@@ -30,11 +30,13 @@ If any required field is missing, ask only for the missing fields and stop befor
 3. Create `wiki/02_content_boundary.md` before writing prompts. Every slide needs a boundary:
    - `grep_required`: facts, claims, dates, names, quotes, current data, citations, or anything that must come from source/web/search.
    - `generation_allowed`: visual metaphors, transitions, examples, phrasing, non-factual teaching scaffolds, and abstract imagery.
-4. Use GPT-image-2 through the system imagegen CLI. This is an explicit model/API path, so it may use the imagegen skill's fallback CLI:
-   - default model: `gpt-image-2`
-   - completed slides: `generate-batch`
-   - text-free backgrounds: `edit` from each completed slide, removing only text while preserving every non-text graphic element
+4. Use Codex native `image_gen` as the default GPT-image-2 path. This path does not require a user-supplied API key. The helper CLI writes prompts and file structure; the Codex agent executes native `image_gen`, then copies generated assets from `$CODEX_HOME/generated_images/...` into the deck project.
+   - default model path: native GPT-image-2 through `image_gen`
+   - generated bases: text-free visual background/composition images under `tmp/native_imagegen/`
+   - source-locked completion: `compose-source-locked --base-dir tmp/native_imagegen` places exact source figures into `background/` and exact editable text into `completed/`
+   - optional API fallback only when explicitly requested: `image2slides imagegen --phase ... --execute`
 5. Save full slide images in `completed/` and matching text-free pages in `background/`.
+   When a user marks data/results as non-mutating, keep those charts or figures source-locked. They may be placed as exact `source_layers` from the wiki instead of being redrawn as generated facts; the GPT-image-2 pass still owns the surrounding slide composition and matched text-free background.
 6. Run analysis:
    ```bash
    python skills/image2slides/scripts/image2slides.py analyze --project <deck-dir>
@@ -45,6 +47,7 @@ If any required field is missing, ask only for the missing fields and stop befor
    python skills/image2slides/scripts/image2slides.py build-pptx --project <deck-dir>
    ```
    Each background image is written as the slide background layer, then editable text boxes are placed above it.
+   `build-pptx` runs `lint-visible` first and fails if control-plane metadata appears in visible slide text.
 8. Verify:
    ```bash
    python skills/image2slides/scripts/image2slides.py qa --project <deck-dir>
@@ -53,7 +56,11 @@ If any required field is missing, ask only for the missing fields and stop befor
 
 ## Prompt Rules
 
+The required input fields are control-plane metadata. They shape the deck, but they must not appear as visible slide copy. Do not render phrases such as the chosen tone, aspect ratio, page count, purpose, scene label, knowledge-base path, plugin name, workflow name, validation label, or file name unless the same phrase is also part of the user-approved presentation content.
+
 For completed slides, include exact slide text and the visual direction. Chinese or dense factual text is allowed only because this output is a reference composition, not the final editable source.
+
+If the user says source data/results must not be changed, do not ask GPT-image-2 to invent or redraw those values. Put the original charts or figures into `source_layers`, keep visible text in `text_items`, and preserve the source registry entry that explains which layers are grep-required.
 
 For background slides, use the completed slide as the edit input and require:
 
@@ -71,7 +78,7 @@ Do not create a background from a new generation prompt if a completed image exi
 Default path:
 
 ```bash
-export IMAGE_GEN="${CODEX_HOME:-$HOME/.codex}/skills/.system/imagegen/scripts/image_gen.py"
+native Codex image_gen tool
 ```
 
 Create queues:
@@ -87,7 +94,7 @@ python skills/image2slides/scripts/image2slides.py imagegen --project <deck-dir>
 python skills/image2slides/scripts/image2slides.py imagegen --project <deck-dir> --phase background --dry-run
 ```
 
-Execute only when the user has supplied/approved API credentials:
+The API CLI fallback is optional and only for explicit API/SDK runs:
 
 ```bash
 python skills/image2slides/scripts/image2slides.py imagegen --project <deck-dir> --phase completed --execute
