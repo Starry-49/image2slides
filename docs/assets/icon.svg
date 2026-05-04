@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Image2Slides">
+  <rect width="256" height="256" rx="56" fill="#001334"/>
+  <rect x="42" y="54" width="172" height="104" rx="14" fill="#f4f8fb"/>
+  <path d="M58 135 94 98l24 25 18-18 58 58H58z" fill="#2f80ed"/>
+  <circle cx="172" cy="84" r="16" fill="#1aae8f"/>
+  <rect x="64" y="180" width="128" height="10" rx="5" fill="#cda349"/>
+  <rect x="82" y="202" width="92" height="8" rx="4" fill="#d6e1ea"/>
+</svg>

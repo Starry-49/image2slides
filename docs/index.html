@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image2Slides</title>
+  <meta name="description" content="Image2Slides is a Codex plugin workflow for GPT-image-2 slide bases, source-locked figures, editable PowerPoint output, and visual QA.">
+  <meta property="og:title" content="Image2Slides">
+  <meta property="og:description" content="Turn image-generated slide compositions into editable PowerPoint decks with source boundaries, wiki structure, and QA.">
+  <meta property="og:image" content="assets/howitworks-output-preview.png">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="#top" aria-label="Image2Slides home">
+      <img src="assets/icon.svg" alt="">
+      <span>Image2Slides</span>
+    </a>
+    <div class="nav-links">
+      <a href="#workflow">Workflow</a>
+      <a href="#commands">Commands</a>
+      <a href="#wiki">Wiki</a>
+      <a href="#example">Example</a>
+      <a href="https://github.com/Starry-49/image2slides" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </nav>
+
+  <main id="top">
+    <section class="hero section">
+      <div class="hero-copy">
+        <img class="hero-icon" src="assets/icon.svg" alt="">
+        <h1>Image2Slides</h1>
+        <p>
+          Image-generated slide bases become source-grounded, editable PowerPoint decks.
+          The workflow combines GPT-image-2 visuals, wiki planning, content boundaries,
+          source-locked figures, and rendered-slide QA.
+        </p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/Starry-49/image2slides" target="_blank" rel="noreferrer">View repository</a>
+          <a class="button" href="#example">See howitworks</a>
+        </div>
+      </div>
+      <figure class="hero-media">
+        <img src="assets/howitworks-output-preview.png" alt="Preview of the reviewed howitworks Image2Slides deck">
+        <figcaption>Human-reviewed PDF export from the howitworks example.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section compact intro-grid" aria-label="Plugin summary">
+      <article>
+        <span class="metric">/image2slides</span>
+        <h2>Slash-command surface</h2>
+        <p>The plugin starts from required intent fields, writes the project wiki, and keeps each stage inspectable on disk.</p>
+      </article>
+      <article>
+        <span class="metric">GPT-image-2</span>
+        <h2>Native image bases</h2>
+        <p>Codex native image generation produces text-free visual bases; source-locked figures are inserted later without redrawing results.</p>
+      </article>
+      <article>
+        <span class="metric">PPTX + PDF</span>
+        <h2>Editable handoff</h2>
+        <p>Backgrounds stay non-selectable, text remains editable, and the final reviewed PDF becomes the visual snapshot.</p>
+      </article>
+    </section>
+
+    <section id="workflow" class="section">
+      <div class="section-head">
+        <p class="kicker">Workflow</p>
+        <h2>From required inputs to a reviewed deck.</h2>
+        <p>The pipeline separates planning, factual boundaries, image generation, deterministic composition, and final inspection.</p>
+      </div>
+      <img class="workflow-visual" src="assets/workflow-diagram.svg" alt="Image2Slides workflow diagram">
+      <div class="timeline">
+        <div><b>1</b><span>Require tone, aspect ratio, slide count, purpose, scene, and knowledge base.</span></div>
+        <div><b>2</b><span>Write the wiki structure, source registry, and grep/generate boundary before prompt work.</span></div>
+        <div><b>3</b><span>Use GPT-image-2 for visual bases and reserve panels that match source-image proportions.</span></div>
+        <div><b>4</b><span>Compose exact source figures, detect native panel edges, and produce completed/background pairs.</span></div>
+        <div><b>5</b><span>Build editable PPTX, run strict QA, then export the accepted PowerPoint to PDF.</span></div>
+      </div>
+    </section>
+
+    <section id="commands" class="section split">
+      <div class="section-head inline">
+        <p class="kicker">Commands</p>
+        <h2>The CLI owns deterministic stages.</h2>
+        <p>Agents make creative and factual decisions; the helper CLI keeps the file layout, composition, PPTX build, and QA repeatable.</p>
+      </div>
+      <div class="code-panel" aria-label="Image2Slides command workflow">
+<pre><code>/image2slides
+style: white classroom report
+ratio: 16:9
+count: 5
+purpose: presentation
+scene: classroom
+knowledge_base: ./howitworks
+
+image2slides init --project decks/my-deck --spec spec.json
+image2slides queue --project decks/my-deck
+
+# after Codex native image_gen saves GPT-image-2 bases:
+image2slides compose-source-locked \
+  --project decks/my-deck \
+  --base-dir tmp/native_imagegen
+
+image2slides audit-layout --project decks/my-deck --strict
+image2slides analyze --project decks/my-deck
+image2slides build-pptx --project decks/my-deck
+image2slides qa --project decks/my-deck --strict</code></pre>
+      </div>
+    </section>
+
+    <section id="wiki" class="section wiki-section">
+      <div class="section-head">
+        <p class="kicker">Wiki</p>
+        <h2>Every deck becomes an inspectable project.</h2>
+        <p>The wiki is the plugin's working memory: intent, hierarchy, source boundaries, source records, and slide plans.</p>
+      </div>
+      <div class="wiki-grid">
+        <article>
+          <h3>Project brief</h3>
+          <p><code>wiki/00_project_brief.md</code> captures the required inputs and keeps them out of visible slide text.</p>
+        </article>
+        <article>
+          <h3>Content boundary</h3>
+          <p><code>wiki/02_content_boundary.md</code> states which claims must be sourced and which parts may be generated.</p>
+        </article>
+        <article>
+          <h3>Source registry</h3>
+          <p><code>wiki/03_source_registry.yml</code> records documents, figures, extracted text, citations, and immutable data layers.</p>
+        </article>
+        <article>
+          <h3>Slide plan</h3>
+          <p><code>wiki/04_slide_plan.json</code> defines titles, editable text, speaker notes, source layers, panel boxes, and margins.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section boundary">
+      <div class="section-head">
+        <p class="kicker">Content boundary</p>
+        <h2>Factual material and generated scaffolding are not mixed casually.</h2>
+      </div>
+      <div class="boundary-grid">
+        <article>
+          <h3>grep_required</h3>
+          <p>Facts, data values, citations, dates, paper names, quotes, screenshots, charts, and source figures. These must come from user material, web/search, or registered sources.</p>
+          <ul>
+            <li>Source chart images remain exact.</li>
+            <li>Data/results are not redrawn by GPT-image-2.</li>
+            <li>Claims point back to the source registry.</li>
+          </ul>
+        </article>
+        <article>
+          <h3>generation_allowed</h3>
+          <p>Visual rhythm, teaching transitions, metaphors, non-factual phrasing, layout pacing, background motifs, and presentation polish.</p>
+          <ul>
+            <li>Can improve explanation flow.</li>
+            <li>Can design blank panels and visual hierarchy.</li>
+            <li>Cannot invent unsupported results.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section io-section">
+      <div class="section-head">
+        <p class="kicker">Input and output</p>
+        <h2>A fixed contract keeps the workflow reliable.</h2>
+      </div>
+      <div class="io-grid">
+        <article>
+          <h3>Required inputs</h3>
+          <p>Base style/tone, aspect ratio, slide count, purpose, scene, and knowledge base. The plugin does not treat these as optional.</p>
+        </article>
+        <article>
+          <h3>Intermediate outputs</h3>
+          <p>Prompt queues, native image bases, source-locked completed/background images, analysis JSON, and QA reports.</p>
+        </article>
+        <article>
+          <h3>Final outputs</h3>
+          <p>Editable <code>pptx/image2slides.pptx</code> and a human-reviewed <code>pptx/image2slides.pdf</code> visual snapshot.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="example" class="section example">
+      <div class="section-head">
+        <p class="kicker">Howitworks example</p>
+        <h2>A minimal mental model committed with the repository.</h2>
+        <p>The example uses the user's converted input PDF, extracted knowledge, GPT-image-2 bases, and reviewed PowerPoint/PDF result.</p>
+      </div>
+      <div class="example-grid">
+        <article>
+          <div class="media-frame">
+            <img src="assets/howitworks-input-preview.png" alt="Preview pages from the howitworks input PDF">
+          </div>
+          <h3>Input material</h3>
+          <p>The input side is the converted <code>howitworks.pdf</code>, with extracted text and figures kept in the example folder.</p>
+          <a class="text-link" href="assets/howitworks-input.pdf" target="_blank" rel="noreferrer">Open input PDF</a>
+        </article>
+        <article>
+          <div class="media-frame">
+            <img src="assets/howitworks-output-preview.png" alt="Preview pages from the reviewed Image2Slides output PDF">
+          </div>
+          <h3>Reviewed output</h3>
+          <p>The output side is the accepted PowerPoint export. This PDF is the canonical visual artifact for avoiding conversion drift.</p>
+          <a class="text-link" href="assets/howitworks-output.pdf" target="_blank" rel="noreferrer">Open reviewed PDF</a>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Image2Slides</span>
+    <a href="https://github.com/Starry-49/image2slides" target="_blank" rel="noreferrer">GitHub</a>
+  </footer>
+</body>
+</html>
