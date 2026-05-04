@@ -79,9 +79,11 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 
    ```bash
    image2slides compose-source-locked --project decks/my-deck --base-dir tmp/native_imagegen
+   image2slides audit-layout --project decks/my-deck --strict
    ```
 
    出力先は `completed/slide_XX_completed.png` と `background/slide_XX_background.png` です。
+   layout audit は、source 図が宣言された panel 内に収まること、編集可能テキストに重ならないこと、native imagegen panel の上に重複した角丸フレームを追加しないことを固定チェックします。
 
 5. 任意の API CLI fallback:
 
@@ -125,15 +127,16 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 8. レンダリングして検証します。
 
    ```bash
-   image2slides qa --project decks/my-deck
+   image2slides qa --project decks/my-deck --strict
    ```
 
    出力:
    - `reports/rendered/`
    - `reports/qa_similarity.json`
    - `reports/qa_report.md`
+   - `reports/source_layer_audit.md`
 
-   LibreOffice と `pdftoppm` が使える場合、QA は PPTX をローカルでレンダリングし、`completed/` と pixel / patch similarity を比較します。
+   LibreOffice と `pdftoppm` が使える場合、QA は PPTX をローカルでレンダリングし、`completed/` と pixel / patch similarity を比較し、固定の source-layer layout audit も再実行します。
 
 ## 出力ディレクトリ
 

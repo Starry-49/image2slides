@@ -563,6 +563,29 @@ def normalized_to_pixels(bbox: Sequence[float], width: int, height: int) -> Tupl
     )
 
 
+def bool_option(value: Any, default: bool) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() not in {"0", "false", "no", "off"}
+
+
+def trim_whitespace(image: "Image.Image", *, threshold: int = 248, margin: int = 8) -> "Image.Image":
+    arr = np.asarray(image.convert("RGB"))
+    mask = np.any(arr < threshold, axis=2)
+    if not mask.any():
+        return image
+    ys, xs = np.where(mask)
+    x0 = max(0, int(xs.min()) - margin)
+    y0 = max(0, int(ys.min()) - margin)
+    x1 = min(image.width, int(xs.max()) + margin + 1)
+    y1 = min(image.height, int(ys.max()) + margin + 1)
+    if (x1 - x0) < image.width * 0.08 or (y1 - y0) < image.height * 0.08:
+        return image
+    return image.crop((x0, y0, x1, y1))
+
+
 def load_compose_font(size_px: int) -> Any:
     candidates = [
         "/System/Library/Fonts/PingFang.ttc",
@@ -606,15 +629,44 @@ def draw_wrapped(draw: Any, text: str, box: Tuple[int, int, int, int], font_obj:
         y += line_height
 
 
-def fit_source_image(path: Path, box: Tuple[int, int, int, int]) -> "Image.Image":
+def source_image_for_layer(path: Path, layer: Dict[str, Any], *, draw_frame: bool) -> "Image.Image":
     source = Image.open(path).convert("RGB")
+    if bool_option(layer.get("trim_whitespace"), not draw_frame):
+        threshold = int(layer.get("trim_threshold", 248))
+        margin = int(layer.get("trim_margin_px", 8))
+        source = trim_whitespace(source, threshold=threshold, margin=margin)
+    return source
+
+
+def fit_source_bounds(source_size: Tuple[int, int], box: Tuple[int, int, int, int]) -> Tuple[int, int, int, int]:
     x0, y0, x1, y1 = box
     target_w = max(1, x1 - x0)
     target_h = max(1, y1 - y0)
-    source.thumbnail((target_w, target_h), Image.Resampling.LANCZOS)
+    source_w, source_h = source_size
+    scale = min(target_w / max(1, source_w), target_h / max(1, source_h))
+    fitted_w = max(1, int(round(source_w * scale)))
+    fitted_h = max(1, int(round(source_h * scale)))
+    px = x0 + (target_w - fitted_w) // 2
+    py = y0 + (target_h - fitted_h) // 2
+    return px, py, px + fitted_w, py + fitted_h
+
+
+def paste_source_image(target: "Image.Image", path: Path, box: Tuple[int, int, int, int], layer: Dict[str, Any], *, canvas_backed: bool) -> Tuple[int, int, int, int]:
+    source = source_image_for_layer(path, layer, draw_frame=canvas_backed)
+    paste_box = fit_source_bounds(source.size, box)
+    fitted_w = paste_box[2] - paste_box[0]
+    fitted_h = paste_box[3] - paste_box[1]
+    source = source.resize((fitted_w, fitted_h), Image.Resampling.LANCZOS)
+    if not canvas_backed:
+        target.paste(source, paste_box[:2])
+        return paste_box
+    x0, y0, x1, y1 = box
+    target_w = max(1, x1 - x0)
+    target_h = max(1, y1 - y0)
     canvas = Image.new("RGB", (target_w, target_h), (255, 255, 255))
-    canvas.paste(source, ((target_w - source.width) // 2, (target_h - source.height) // 2))
-    return canvas
+    canvas.paste(source, (paste_box[0] - x0, paste_box[1] - y0))
+    target.paste(canvas, (x0, y0))
+    return box
 
 
 def load_base_background(project: Path, raw_base_dir: Optional[str], slide_no: int, size: Tuple[int, int], fallback_color: Tuple[int, int, int]) -> "Image.Image":
@@ -679,12 +731,13 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
             box = normalized_to_pixels(layer.get("bbox", []), width, height)
             pad = int(layer.get("padding_px", 20))
             radius = int(layer.get("radius_px", 24))
-            draw.rounded_rectangle(box, radius=radius, fill=(255, 255, 255), outline=rgb("#d9e3ef"), width=2)
+            draw_frame = bool_option(layer.get("draw_frame"), args.base_dir is None)
+            if draw_frame:
+                draw.rounded_rectangle(box, radius=radius, fill=(255, 255, 255), outline=rgb("#d9e3ef"), width=2)
             inner = (box[0] + pad, box[1] + pad, box[2] - pad, box[3] - pad)
             if inner[2] <= inner[0] or inner[3] <= inner[1]:
                 inner = box
-            fitted = fit_source_image(source_path, inner)
-            background.paste(fitted, inner[:2])
+            paste_source_image(background, source_path, inner, layer, canvas_backed=draw_frame)
 
         completed = background.copy()
         draw_text_items(completed, slide)
@@ -1379,6 +1432,130 @@ def rendered_slide_path(rendered_dir: Path, slide: int) -> Optional[Path]:
     return matches[0] if matches else None
 
 
+def unit_rect(values: Sequence[float]) -> Tuple[float, float, float, float]:
+    if len(values) != 4:
+        die(f"bbox must have four values: {values}")
+    x, y, w, h = [float(v) for v in values]
+    return x, y, x + w, y + h
+
+
+def rect_area(rect: Tuple[float, float, float, float]) -> float:
+    return max(0.0, rect[2] - rect[0]) * max(0.0, rect[3] - rect[1])
+
+
+def rect_intersection(a: Tuple[float, float, float, float], b: Tuple[float, float, float, float]) -> float:
+    return max(0.0, min(a[2], b[2]) - max(a[0], b[0])) * max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+
+
+def rect_inside(inner: Tuple[float, float, float, float], outer: Tuple[float, float, float, float], tolerance: float = 0.01) -> bool:
+    return (
+        inner[0] >= outer[0] - tolerance
+        and inner[1] >= outer[1] - tolerance
+        and inner[2] <= outer[2] + tolerance
+        and inner[3] <= outer[3] + tolerance
+    )
+
+
+def source_layer_paste_rect(project: Path, layer: Dict[str, Any], image_size: Tuple[int, int]) -> Tuple[float, float, float, float]:
+    width, height = image_size
+    layer_box = normalized_to_pixels(layer.get("bbox", []), width, height)
+    pad = int(layer.get("padding_px", 20))
+    inner = (layer_box[0] + pad, layer_box[1] + pad, layer_box[2] - pad, layer_box[3] - pad)
+    if inner[2] <= inner[0] or inner[3] <= inner[1]:
+        inner = layer_box
+    source_path = resolve_project_path(project, str(layer.get("path", "")))
+    draw_frame = bool_option(layer.get("draw_frame"), False)
+    if source_path.exists():
+        source = source_image_for_layer(source_path, layer, draw_frame=draw_frame)
+        px0, py0, px1, py1 = fit_source_bounds(source.size, inner)
+    else:
+        px0, py0, px1, py1 = inner
+    return px0 / width, py0 / height, px1 / width, py1 / height
+
+
+def audit_source_layers(project: Path) -> Dict[str, Any]:
+    require_image_libs()
+    spec = load_project(project)
+    plan = slide_plan(project)
+    image_size = parse_image_size(spec["image_size"])
+    issues: List[Dict[str, Any]] = []
+    rows: List[Dict[str, Any]] = []
+    native_base_present = (project / "tmp/native_imagegen").exists()
+
+    for slide in plan.get("slides", []):
+        slide_no = int(slide["slide"])
+        text_rects = []
+        for item in slide.get("text_items", []):
+            bbox = item.get("bbox") or default_bbox(str(item.get("role", "body")), 0)
+            text_rects.append((str(item.get("role", "text")), unit_rect(bbox)))
+        for idx, layer in enumerate(slide.get("source_layers", []), start=1):
+            layer_id = f"{slide_no}.{idx}"
+            layer_rect = unit_rect(layer.get("bbox", []))
+            paste_rect = source_layer_paste_rect(project, layer, image_size)
+            panel_rect = unit_rect(layer["panel_bbox"]) if layer.get("panel_bbox") else None
+            draw_frame = bool_option(layer.get("draw_frame"), False)
+            row = {
+                "slide": slide_no,
+                "layer": idx,
+                "path": layer.get("path"),
+                "bbox": list(layer_rect),
+                "paste_bbox": list(paste_rect),
+                "panel_bbox": list(panel_rect) if panel_rect else None,
+                "draw_frame": draw_frame,
+            }
+            rows.append(row)
+
+            if not rect_inside(layer_rect, (0.0, 0.0, 1.0, 1.0), tolerance=0.0):
+                issues.append({"slide": slide_no, "layer": idx, "kind": "out_of_slide", "message": "source layer bbox is outside the slide"})
+            if panel_rect and not rect_inside(paste_rect, panel_rect, tolerance=0.012):
+                issues.append({"slide": slide_no, "layer": idx, "kind": "outside_panel", "message": "source image paste area is not fully inside its declared panel_bbox"})
+            if native_base_present and draw_frame:
+                issues.append({"slide": slide_no, "layer": idx, "kind": "duplicate_frame_risk", "message": "native imagegen base is present but source layer requests an extra drawn frame"})
+
+            for role, text_rect in text_rects:
+                overlap = rect_intersection(paste_rect, text_rect)
+                if overlap <= 0:
+                    continue
+                denom = max(0.0001, min(rect_area(paste_rect), rect_area(text_rect)))
+                if overlap / denom > 0.01:
+                    issues.append(
+                        {
+                            "slide": slide_no,
+                            "layer": idx,
+                            "kind": "text_overlap",
+                            "role": role,
+                            "message": f"source image paste area overlaps editable text role `{role}`",
+                        }
+                    )
+
+    return {"created_at": now_iso(), "issue_count": len(issues), "issues": issues, "layers": rows}
+
+
+def write_source_layer_audit(project: Path, report: Dict[str, Any]) -> None:
+    write_json(project / "reports/source_layer_audit.json", report)
+    lines = [
+        "# Source Layer Layout Audit",
+        "",
+        f"- Issues: {report['issue_count']}",
+        "",
+        "| Slide | Layer | Kind | Message |",
+        "| --- | --- | --- | --- |",
+    ]
+    for issue in report["issues"]:
+        lines.append(f"| {issue['slide']} | {issue['layer']} | {issue['kind']} | {issue['message']} |")
+    (project / "reports/source_layer_audit.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def cmd_audit_layout(args: argparse.Namespace) -> None:
+    project = Path(args.project).resolve()
+    report = audit_source_layers(project)
+    write_source_layer_audit(project, report)
+    print(f"Wrote {project / 'reports/source_layer_audit.json'}")
+    print(f"Wrote {project / 'reports/source_layer_audit.md'}")
+    if args.strict and report["issue_count"]:
+        die(f"source layer layout audit found {report['issue_count']} issue(s)")
+
+
 def cmd_qa(args: argparse.Namespace) -> None:
     project = Path(args.project).resolve()
     spec = load_project(project)
@@ -1402,6 +1579,8 @@ def cmd_qa(args: argparse.Namespace) -> None:
         "slides": rows,
     }
     write_json(project / "reports/qa_similarity.json", report)
+    layout_report = audit_source_layers(project)
+    write_source_layer_audit(project, layout_report)
     failing = [
         r for r in rows
         if r.get("status") != "ok" or float(r.get("pixel_similarity", 0.0)) < args.min_similarity
@@ -1413,6 +1592,7 @@ def cmd_qa(args: argparse.Namespace) -> None:
         f"- Similarity threshold: {args.min_similarity}",
         f"- Slides checked: {len(rows)}",
         f"- Failing or missing slides: {len(failing)}",
+        f"- Source layer layout issues: {layout_report['issue_count']}",
         "",
         "| Slide | Status | Pixel similarity | Patch similarity |",
         "| --- | --- | --- | --- |",
@@ -1424,8 +1604,12 @@ def cmd_qa(args: argparse.Namespace) -> None:
     (project / "reports/qa_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"Wrote {project / 'reports/qa_similarity.json'}")
     print(f"Wrote {project / 'reports/qa_report.md'}")
+    print(f"Wrote {project / 'reports/source_layer_audit.json'}")
+    print(f"Wrote {project / 'reports/source_layer_audit.md'}")
     if args.strict and failing:
         die(f"{len(failing)} slide(s) failed similarity threshold")
+    if args.strict and layout_report["issue_count"]:
+        die(f"source layer layout audit found {layout_report['issue_count']} issue(s)")
 
 
 def cmd_doctor(args: argparse.Namespace) -> None:
@@ -1468,6 +1652,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--project", required=True)
     p.add_argument("--base-dir", help="Optional GPT-image-2 native background base directory")
     p.set_defaults(func=cmd_compose_source_locked)
+
+    p = sub.add_parser("audit-layout", help="Audit source layers for panel placement, duplicate frames, and text overlap")
+    p.add_argument("--project", required=True)
+    p.add_argument("--strict", action="store_true")
+    p.set_defaults(func=cmd_audit_layout)
 
     p = sub.add_parser("imagegen", help="Run or preview GPT-image-2 imagegen calls")
     p.add_argument("--project", required=True)

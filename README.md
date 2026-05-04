@@ -79,9 +79,11 @@ Use [examples/spec.example.json](./examples/spec.example.json) as the starting s
 
    ```bash
    image2slides compose-source-locked --project decks/my-deck --base-dir tmp/native_imagegen
+   image2slides audit-layout --project decks/my-deck --strict
    ```
 
    Results land in `completed/slide_XX_completed.png` and `background/slide_XX_background.png`.
+   The layout audit verifies that source figures stay inside declared panels, do not overlap editable text, and do not add duplicate rounded frames over native imagegen panels.
 
 5. Optional API CLI fallback:
 
@@ -125,15 +127,16 @@ Use [examples/spec.example.json](./examples/spec.example.json) as the starting s
 8. Render and verify:
 
    ```bash
-   image2slides qa --project decks/my-deck
+   image2slides qa --project decks/my-deck --strict
    ```
 
    Results:
    - `reports/rendered/`
    - `reports/qa_similarity.json`
    - `reports/qa_report.md`
+   - `reports/source_layer_audit.md`
 
-   QA renders the PPTX locally when LibreOffice and `pdftoppm` are available, then compares rendered slides with `completed/` using pixel and patch similarity.
+   QA renders the PPTX locally when LibreOffice and `pdftoppm` are available, compares rendered slides with `completed/` using pixel and patch similarity, and repeats the fixed source-layer layout audit.
 
 ## Output Directory Map
 

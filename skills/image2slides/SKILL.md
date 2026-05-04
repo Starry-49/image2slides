@@ -37,6 +37,7 @@ If any required field is missing, ask only for the missing fields and stop befor
    - optional API fallback only when explicitly requested: `image2slides imagegen --phase ... --execute`
 5. Save full slide images in `completed/` and matching text-free pages in `background/`.
    When a user marks data/results as non-mutating, keep those charts or figures source-locked. They may be placed as exact `source_layers` from the wiki instead of being redrawn as generated facts; the GPT-image-2 pass still owns the surrounding slide composition and matched text-free background.
+   When native imagegen already created visual panels, set `draw_frame: false` on matching `source_layers` or rely on the `--base-dir` default so the compositor does not add duplicate rounded rectangles.
 6. Run analysis:
    ```bash
    python skills/image2slides/scripts/image2slides.py analyze --project <deck-dir>
@@ -50,9 +51,10 @@ If any required field is missing, ask only for the missing fields and stop befor
    `build-pptx` runs `lint-visible` first and fails if control-plane metadata appears in visible slide text.
 8. Verify:
    ```bash
-   python skills/image2slides/scripts/image2slides.py qa --project <deck-dir>
+   python skills/image2slides/scripts/image2slides.py qa --project <deck-dir> --strict
    ```
    This renders the PPTX when local tools are available, compares each rendered page with `completed/`, and writes pixel/patch similarity reports.
+   QA also writes `reports/source_layer_audit.md`. This fixed review item checks that source figures stay inside declared `panel_bbox`, do not overlap editable text, and do not add duplicate rounded-rectangle frames over native imagegen panels.
 
 ## Prompt Rules
 
@@ -121,4 +123,5 @@ Image2Slides intentionally differs by allowing full-slide completed references, 
 - `analysis/manifest.json` contains dominant colors, text regions, and blank regions
 - `pptx/image2slides.pptx` exists
 - `reports/qa_similarity.json` and `reports/qa_report.md` exist
+- `reports/source_layer_audit.json` exists with zero issues
 - report any slides below the configured similarity threshold

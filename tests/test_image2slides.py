@@ -141,7 +141,14 @@ class Image2SlidesTests(unittest.TestCase):
             plan["slides"][0].update(
                 {
                     "background_color": "#fbfcfe",
-                    "source_layers": [{"path": "wiki/sources/source.png", "bbox": [0.55, 0.2, 0.32, 0.42]}],
+                    "source_layers": [
+                        {
+                            "path": "wiki/sources/source.png",
+                            "bbox": [0.55, 0.2, 0.32, 0.42],
+                            "panel_bbox": [0.52, 0.16, 0.4, 0.5],
+                            "draw_frame": False,
+                        }
+                    ],
                     "text_items": [
                         {"role": "title", "text": "Source-locked result", "bbox": [0.08, 0.13, 0.42, 0.12]},
                         {"role": "body", "text": "Exact figure remains a placed source layer.", "bbox": [0.08, 0.28, 0.42, 0.2]},
@@ -151,8 +158,46 @@ class Image2SlidesTests(unittest.TestCase):
             plan_path.write_text(json.dumps(plan), encoding="utf-8")
 
             run_cli(["compose-source-locked", "--project", str(project), "--base-dir", str(base_dir)])
+            run_cli(["audit-layout", "--project", str(project), "--strict"])
             self.assertTrue((project / "completed/slide_01_completed.png").exists())
             self.assertTrue((project / "background/slide_01_background.png").exists())
+            background = Image.open(project / "background/slide_01_background.png")
+            self.assertEqual(background.getpixel((1126, 231)), (238, 246, 255))
+
+    def test_layout_audit_blocks_source_overlap(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            source = project / "wiki/sources/source.png"
+            Image.new("RGB", (160, 90), "#2f80ed").save(source)
+            plan_path = project / "wiki/04_slide_plan.json"
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["slides"][0].update(
+                {
+                    "source_layers": [
+                        {
+                            "path": "wiki/sources/source.png",
+                            "bbox": [0.08, 0.12, 0.30, 0.20],
+                            "panel_bbox": [0.50, 0.20, 0.30, 0.30],
+                            "draw_frame": False,
+                        }
+                    ],
+                    "text_items": [
+                        {"role": "title", "text": "Source-locked result", "bbox": [0.08, 0.13, 0.42, 0.12]},
+                    ],
+                }
+            )
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+            with self.assertRaises(SystemExit):
+                run_cli(["audit-layout", "--project", str(project), "--strict"])
+            audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
+            kinds = {issue["kind"] for issue in audit["issues"]}
+            self.assertIn("outside_panel", kinds)
+            self.assertIn("text_overlap", kinds)
 
 
 class tempfile_dir:

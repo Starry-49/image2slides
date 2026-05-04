@@ -79,9 +79,11 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 
    ```bash
    image2slides compose-source-locked --project decks/my-deck --base-dir tmp/native_imagegen
+   image2slides audit-layout --project decks/my-deck --strict
    ```
 
    输出到 `completed/slide_XX_completed.png` 和 `background/slide_XX_background.png`。
+   layout audit 会固定检查 source 图是否在声明的 panel 内、是否遮挡可编辑文字、是否在 native imagegen panel 上重复添加圆角框。
 
 5. 可选 API CLI fallback：
 
@@ -125,15 +127,16 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 8. 渲染并验收：
 
    ```bash
-   image2slides qa --project decks/my-deck
+   image2slides qa --project decks/my-deck --strict
    ```
 
    输出：
    - `reports/rendered/`
    - `reports/qa_similarity.json`
    - `reports/qa_report.md`
+   - `reports/source_layer_audit.md`
 
-   QA 会在本地有 LibreOffice 和 `pdftoppm` 时渲染 PPTX，再与 `completed/` 做像素和 patch 相似度比较。
+   QA 会在本地有 LibreOffice 和 `pdftoppm` 时渲染 PPTX，再与 `completed/` 做像素和 patch 相似度比较，并再次执行固定的 source-layer layout audit。
 
 ## 输出目录
 
