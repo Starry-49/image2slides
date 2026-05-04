@@ -1,0 +1,47 @@
+{
+  "name": "image2slides",
+  "version": "0.1.0",
+  "description": "Codex plugin and CLI workflow for turning GPT-image slide references into editable PowerPoint decks.",
+  "license": "MIT",
+  "homepage": "https://github.com/Starry-49/image2slides#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Starry-49/image2slides.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Starry-49/image2slides/issues"
+  },
+  "keywords": [
+    "codex-plugin",
+    "slides",
+    "pptx",
+    "powerpoint",
+    "gpt-image-2",
+    "image-generation"
+  ],
+  "bin": {
+    "image2slides": "./skills/image2slides/scripts/image2slides.py"
+  },
+  "files": [
+    ".codex-plugin/",
+    "agents/",
+    "assets/",
+    "examples/",
+    "skills/image2slides/SKILL.md",
+    "skills/image2slides/agents/",
+    "skills/image2slides/references/",
+    "skills/image2slides/scripts/image2slides.py",
+    "README.md",
+    "README.zh-CN.md",
+    "README.ja.md",
+    "LICENSE",
+    "tests/"
+  ],
+  "scripts": {
+    "doctor": "python3 skills/image2slides/scripts/image2slides.py doctor",
+    "test": "PYTHONPATH=skills/image2slides/scripts python3 tests/test_image2slides.py"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
