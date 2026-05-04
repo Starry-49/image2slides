@@ -83,8 +83,8 @@ python3 skills/image2slides/scripts/image2slides.py doctor
    ```
 
    出力先は `completed/slide_XX_completed.png` と `background/slide_XX_background.png` です。
-   layout audit は、source 図が宣言された panel 内に収まること、編集可能テキストに重ならないこと、native imagegen panel の上に重複した角丸フレームを追加しないことを固定チェックします。
-   source fitting は blank pixel を先に裁ち、宣言された panel を `fit_margin_px` で内側に縮め、4 辺の平行エッジ制約の下で最大スケール化して slack を最小化し、画像中心を inset panel の中心に合わせます。
+   layout audit は、source 図が検出された native panel 内に収まること、編集可能テキストに重ならないこと、native imagegen panel の上に重複した角丸フレームを追加しないことを固定チェックします。
+   source fitting は blank pixel を先に裁ち、GPT-image-2 prompt では source 画像の比率に合う panel を予約します。compose 時には生成された下地の実際の panel エッジを検出し、`fit_margin_px` で内側に縮め、4 辺の平行エッジ制約の下で最大スケール化して slack を最小化し、画像中心を inset panel の中心に合わせます。
 
 5. 任意の API CLI fallback:
 

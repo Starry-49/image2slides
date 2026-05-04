@@ -176,6 +176,63 @@ class Image2SlidesTests(unittest.TestCase):
                 image2slides.rect_inside(tuple(layer["paste_bbox"]), tuple(layer["fit_bbox"]), tolerance=0.004)
             )
 
+    def test_source_layer_uses_detected_native_panel_and_aspect_plan(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            source = project / "wiki/sources/source.png"
+            Image.new("RGB", (400, 200), "#2f80ed").save(source)
+            base_dir = project / "tmp/native_imagegen"
+            base_dir.mkdir(parents=True)
+            base = Image.new("RGB", (2048, 1152), "#fbfcfe")
+            draw_base = ImageDraw.Draw(base)
+            actual_panel = (1100, 140, 1900, 1040)
+            draw_base.rounded_rectangle(actual_panel, radius=24, fill="#ffffff", outline="#cddceb", width=3)
+            base.save(base_dir / "slide_01_base.png")
+
+            plan_path = project / "wiki/04_slide_plan.json"
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["slides"][0].update(
+                {
+                    "source_layers": [
+                        {
+                            "path": "wiki/sources/source.png",
+                            "bbox": [0.48, 0.16, 0.35, 0.42],
+                            "panel_bbox": [0.48, 0.12, 0.35, 0.48],
+                            "fit_margin_px": 32,
+                            "draw_frame": False,
+                        }
+                    ],
+                    "text_items": [
+                        {"role": "title", "text": "Source panel", "bbox": [0.08, 0.13, 0.30, 0.10]},
+                    ],
+                }
+            )
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+            run_cli(["queue", "--project", str(project)])
+            prompt = json.loads((project / "prompts/completed_prompts.jsonl").read_text(encoding="utf-8").splitlines()[0])
+            self.assertIn("Source-locked panel plan", prompt["prompt"])
+            self.assertIn("source aspect 2.000:1", prompt["prompt"])
+
+            run_cli(["compose-source-locked", "--project", str(project), "--base-dir", str(base_dir)])
+            run_cli(["audit-layout", "--project", str(project), "--strict"])
+            audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
+            layer = audit["layers"][0]
+            self.assertIsNotNone(layer["detected_panel_bbox"])
+            self.assertGreater(layer["actual_panel_bbox"][0], layer["declared_panel_bbox"][0])
+            self.assertTrue(
+                image2slides.rect_inside(tuple(layer["paste_bbox"]), tuple(layer["actual_panel_bbox"]), tolerance=0.002)
+            )
+            self.assertTrue(
+                image2slides.rect_inside(tuple(layer["paste_bbox"]), tuple(layer["fit_bbox"]), tolerance=0.004)
+            )
+            self.assertLess(layer["slack_px"][0], 3)
+            self.assertLess(layer["slack_px"][1], 3)
+
     def test_layout_audit_blocks_source_overlap(self) -> None:
         with tempfile_dir() as tmp:
             spec = tmp / "spec.json"

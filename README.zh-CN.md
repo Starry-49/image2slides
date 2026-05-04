@@ -83,8 +83,8 @@ python3 skills/image2slides/scripts/image2slides.py doctor
    ```
 
    输出到 `completed/slide_XX_completed.png` 和 `background/slide_XX_background.png`。
-   layout audit 会固定检查 source 图是否在声明的 panel 内、是否遮挡可编辑文字、是否在 native imagegen panel 上重复添加圆角框。
-   source fitting 会先裁掉 blank 像素，再把声明的 panel 按 `fit_margin_px` 内缩，在四条平行边约束下最大化缩放并最小化剩余 slack，最后让图片中心和内缩 panel 中心对齐。
+   layout audit 会固定检查 source 图是否在检测到的 native panel 内、是否遮挡可编辑文字、是否在 native imagegen panel 上重复添加圆角框。
+   source fitting 会先裁掉 blank 像素，并在 GPT-image-2 prompt 中要求 panel 比例反向匹配 source 图片；compose 时会识别生成底版中的真实 panel 边界，再按 `fit_margin_px` 内缩，在四条平行边约束下最大化缩放并最小化剩余 slack，最后让图片中心和内缩 panel 中心对齐。
 
 5. 可选 API CLI fallback：
 

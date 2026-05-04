@@ -39,6 +39,17 @@
           "bbox": [0.08, 0.16, 0.45, 0.18]
         }
       ],
+      "source_layers": [
+        {
+          "path": "wiki/sources/figure.png",
+          "bbox": [0.55, 0.20, 0.32, 0.42],
+          "panel_bbox": [0.52, 0.16, 0.40, 0.50],
+          "fit_margin_px": 32,
+          "draw_frame": false,
+          "panel_aspect_from_source": true,
+          "detect_panel": true
+        }
+      ],
       "speaker_notes": ""
     }
   ]
@@ -46,3 +57,4 @@
 ```
 
 `bbox` is optional and normalized as `[x, y, w, h]` from 0 to 1. If absent, `analyze` results are used.
+For `source_layers`, `panel_bbox` is the intended/generated panel area. `panel_aspect_from_source` defaults to true and lets the workflow plan a panel ratio from the source image. `detect_panel` defaults to true and lets compose/QA use the actual GPT-image-2 panel edge when a native base image exists.

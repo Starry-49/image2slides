@@ -358,19 +358,21 @@ def base_prompt(spec: Dict[str, Any]) -> str:
     )
 
 
-def completed_prompt(spec: Dict[str, Any], slide: Dict[str, Any]) -> str:
+def completed_prompt(project: Path, spec: Dict[str, Any], slide: Dict[str, Any]) -> str:
     texts = []
     for item in slide.get("text_items", []):
         text = str(item.get("text", "")).strip()
         if text:
             texts.append(text)
     text_block = "\n".join(texts)
+    source_plan = source_layout_instructions(project, spec, slide)
     return (
         base_prompt(spec)
         + f"\nSlide {slide['slide']:02d}: {slide.get('title', '')}\n"
         + f"Layout: {slide.get('layout', 'content')}\n"
         + f"Visual intent: {slide.get('visual_intent', '')}\n"
         + f"Source boundary: {slide.get('source_boundary', 'mixed')}\n"
+        + source_plan
         + "Create a polished complete slide reference image with the following exact visible text.\n"
         + f"Text (verbatim):\n{text_block}\n"
         + "Visible text rule: render only the text listed above. Do not add setup labels, style/tone names, "
@@ -599,6 +601,98 @@ def trim_whitespace(image: "Image.Image", *, threshold: int = 248, margin: int =
     return image.crop((x0, y0, x1, y1))
 
 
+def clamp_box(box: Tuple[int, int, int, int], width: int, height: int) -> Tuple[int, int, int, int]:
+    x0, y0, x1, y1 = box
+    x0 = max(0, min(width - 1, int(x0)))
+    y0 = max(0, min(height - 1, int(y0)))
+    x1 = max(x0 + 1, min(width, int(x1)))
+    y1 = max(y0 + 1, min(height, int(y1)))
+    return x0, y0, x1, y1
+
+
+def expand_box(box: Tuple[int, int, int, int], width: int, height: int, pad_x: int, pad_y: int) -> Tuple[int, int, int, int]:
+    return clamp_box((box[0] - pad_x, box[1] - pad_y, box[2] + pad_x, box[3] + pad_y), width, height)
+
+
+def edge_candidates(profile: "np.ndarray", offset: int) -> List[Tuple[int, float]]:
+    if profile.size == 0:
+        return []
+    high_cutoff = max(
+        2.5,
+        float(np.percentile(profile, 97.5)),
+        float(profile.mean() + profile.std() * 1.75),
+    )
+    cutoff = max(2.5, min(high_cutoff, float(np.percentile(profile, 95.0)) * 1.5))
+    raw = [int(i) for i in np.where(profile >= cutoff)[0]]
+    if not raw:
+        strongest = int(profile.argmax())
+        if float(profile[strongest]) >= 2.5:
+            return [(offset + strongest, float(profile[strongest]))]
+        return []
+    clusters: List[List[int]] = []
+    for idx in raw:
+        if not clusters or idx > clusters[-1][-1] + 2:
+            clusters.append([idx])
+        else:
+            clusters[-1].append(idx)
+    candidates: List[Tuple[int, float]] = []
+    for cluster in clusters:
+        best = max(cluster, key=lambda i: float(profile[i]))
+        candidates.append((offset + best, float(profile[best])))
+    return candidates
+
+
+def nearest_edge(candidates: List[Tuple[int, float]], target: int, window: int) -> Optional[int]:
+    scoped = [item for item in candidates if abs(item[0] - target) <= window]
+    if not scoped:
+        return None
+    scoped.sort(key=lambda item: (abs(item[0] - target), -item[1]))
+    return scoped[0][0]
+
+
+def detect_panel_box_from_image(
+    image: "Image.Image",
+    declared_box: Tuple[int, int, int, int],
+) -> Optional[Tuple[int, int, int, int]]:
+    """Detect the visible panel edge nearest to a declared source-layer panel."""
+    require_image_libs()
+    width, height = image.size
+    declared_box = clamp_box(declared_box, width, height)
+    panel_w = declared_box[2] - declared_box[0]
+    panel_h = declared_box[3] - declared_box[1]
+    pad_x = max(96, int(panel_w * 0.28), int(width * 0.035))
+    pad_y = max(96, int(panel_h * 0.75), int(height * 0.04))
+    search = expand_box(declared_box, width, height, pad_x, pad_y)
+    if search[2] - search[0] < 32 or search[3] - search[1] < 32:
+        return None
+
+    arr = np.asarray(image.convert("RGB")).astype(np.float32)
+    lum = arr[:, :, 0] * 0.299 + arr[:, :, 1] * 0.587 + arr[:, :, 2] * 0.114
+    crop = lum[search[1] : search[3], search[0] : search[2]]
+    if crop.shape[0] < 3 or crop.shape[1] < 3:
+        return None
+
+    v_profile = np.abs(np.diff(crop, axis=1)).mean(axis=0)
+    h_profile = np.abs(np.diff(crop, axis=0)).mean(axis=1)
+    verticals = edge_candidates(v_profile, search[0])
+    horizontals = edge_candidates(h_profile, search[1])
+    window_x = max(120, int(panel_w * 0.32), int(width * 0.04))
+    window_y = max(120, int(panel_h * 0.75), int(height * 0.05))
+    left = nearest_edge(verticals, declared_box[0], window_x)
+    right = nearest_edge(verticals, declared_box[2], window_x)
+    top = nearest_edge(horizontals, declared_box[1], window_y)
+    bottom = nearest_edge(horizontals, declared_box[3], window_y)
+    if left is None or right is None or top is None or bottom is None:
+        return None
+    if right <= left + 24 or bottom <= top + 24:
+        return None
+    center_x = (declared_box[0] + declared_box[2]) / 2.0
+    center_y = (declared_box[1] + declared_box[3]) / 2.0
+    if not (left - window_x <= center_x <= right + window_x and top - window_y <= center_y <= bottom + window_y):
+        return None
+    return clamp_box((left, top, right + 1, bottom + 1), width, height)
+
+
 def load_compose_font(size_px: int) -> Any:
     candidates = [
         "/System/Library/Fonts/PingFang.ttc",
@@ -651,6 +745,48 @@ def source_image_for_layer(path: Path, layer: Dict[str, Any], *, draw_frame: boo
     return source
 
 
+def aspect_adjusted_panel_box(
+    panel: Tuple[int, int, int, int],
+    source_size: Tuple[int, int],
+    margin_px: int,
+) -> Tuple[int, int, int, int]:
+    source_w, source_h = source_size
+    if source_w <= 0 or source_h <= 0:
+        return panel
+    x0, y0, x1, y1 = panel
+    panel_w = max(1, x1 - x0)
+    panel_h = max(1, y1 - y0)
+    inner_w = max(1, panel_w - margin_px * 2)
+    inner_h = max(1, panel_h - margin_px * 2)
+    source_ratio = source_w / max(1, source_h)
+    panel_ratio = inner_w / max(1, inner_h)
+    if abs(source_ratio - panel_ratio) < 0.015:
+        return panel
+
+    if panel_ratio > source_ratio:
+        new_inner_w = max(1, int(round(inner_h * source_ratio)))
+        new_panel_w = min(panel_w, new_inner_w + margin_px * 2)
+        new_panel_h = panel_h
+    else:
+        new_inner_h = max(1, int(round(inner_w / source_ratio)))
+        new_panel_w = panel_w
+        new_panel_h = min(panel_h, new_inner_h + margin_px * 2)
+
+    cx = (x0 + x1) / 2.0
+    cy = (y0 + y1) / 2.0
+    nx0 = int(round(cx - new_panel_w / 2.0))
+    ny0 = int(round(cy - new_panel_h / 2.0))
+    return nx0, ny0, nx0 + int(new_panel_w), ny0 + int(new_panel_h)
+
+
+def panel_aspect_from_source(layer: Dict[str, Any]) -> bool:
+    return bool_option(layer.get("panel_aspect_from_source"), True)
+
+
+def panel_detection_enabled(layer: Dict[str, Any]) -> bool:
+    return bool_option(layer.get("detect_panel"), True)
+
+
 def fit_source_bounds(source_size: Tuple[int, int], box: Tuple[int, int, int, int]) -> Tuple[int, int, int, int]:
     """Fit source into box by maximizing scale, centering, and minimizing B - A slack."""
     x0, y0, x1, y1 = box
@@ -677,16 +813,36 @@ def layer_panel_box(layer: Dict[str, Any], width: int, height: int) -> Tuple[int
     return normalized_to_pixels(raw, width, height)
 
 
-def source_fit_geometry(project: Path, layer: Dict[str, Any], image_size: Tuple[int, int], *, draw_frame: bool) -> Dict[str, Any]:
+def source_fit_geometry(
+    project: Path,
+    layer: Dict[str, Any],
+    image_size: Tuple[int, int],
+    *,
+    draw_frame: bool,
+    panel_image: Optional["Image.Image"] = None,
+) -> Dict[str, Any]:
     width, height = image_size
-    panel = layer_panel_box(layer, width, height)
+    declared_panel = layer_panel_box(layer, width, height)
     margin = layer_margin_px(layer, has_panel=bool(layer.get("panel_bbox")))
-    fit_region = inset_box(panel, margin)
     source_path = resolve_project_path(project, str(layer.get("path", "")))
-    source_size = (fit_region[2] - fit_region[0], fit_region[3] - fit_region[1])
+    source_size = (max(1, declared_panel[2] - declared_panel[0]), max(1, declared_panel[3] - declared_panel[1]))
     if source_path.exists():
         source = source_image_for_layer(source_path, layer, draw_frame=draw_frame)
         source_size = source.size
+
+    detected_panel = None
+    if panel_image is not None and panel_detection_enabled(layer):
+        reference = panel_image.convert("RGB")
+        if reference.size != image_size:
+            reference = reference.resize(image_size, Image.Resampling.LANCZOS)
+        detected_panel = detect_panel_box_from_image(reference, declared_panel)
+
+    actual_panel = detected_panel or declared_panel
+    panel = actual_panel
+    if panel_aspect_from_source(layer):
+        panel = aspect_adjusted_panel_box(actual_panel, source_size, margin)
+        panel = clamp_box(panel, width, height)
+    fit_region = inset_box(panel, margin)
     paste_box = fit_source_bounds(source_size, fit_region)
     fit_w = max(1, fit_region[2] - fit_region[0])
     fit_h = max(1, fit_region[3] - fit_region[1])
@@ -696,17 +852,31 @@ def source_fit_geometry(project: Path, layer: Dict[str, Any], image_size: Tuple[
     paste_center = ((paste_box[0] + paste_box[2]) / 2.0, (paste_box[1] + paste_box[3]) / 2.0)
     return {
         "panel_box": panel,
+        "actual_panel_box": actual_panel,
+        "declared_panel_box": declared_panel,
+        "detected_panel_box": detected_panel,
         "fit_region": fit_region,
         "paste_box": paste_box,
         "source_size": source_size,
         "margin_px": margin,
+        "panel_aspect_from_source": panel_aspect_from_source(layer),
         "slack_px": (fit_w - paste_w, fit_h - paste_h),
         "center_delta_px": (paste_center[0] - fit_center[0], paste_center[1] - fit_center[1]),
     }
 
 
-def paste_source_image(target: "Image.Image", project: Path, path: Path, layer: Dict[str, Any], *, canvas_backed: bool) -> Tuple[int, int, int, int]:
-    geometry = source_fit_geometry(project, layer, target.size, draw_frame=canvas_backed)
+def paste_source_image(
+    target: "Image.Image",
+    project: Path,
+    path: Path,
+    layer: Dict[str, Any],
+    *,
+    canvas_backed: bool,
+    panel_image: Optional["Image.Image"] = None,
+    geometry: Optional[Dict[str, Any]] = None,
+) -> Tuple[int, int, int, int]:
+    if geometry is None:
+        geometry = source_fit_geometry(project, layer, target.size, draw_frame=canvas_backed, panel_image=panel_image)
     source = source_image_for_layer(path, layer, draw_frame=canvas_backed)
     paste_box = geometry["paste_box"]
     fitted_w = paste_box[2] - paste_box[0]
@@ -721,7 +891,43 @@ def paste_source_image(target: "Image.Image", project: Path, path: Path, layer: 
     canvas = Image.new("RGB", (target_w, target_h), (255, 255, 255))
     canvas.paste(source, (paste_box[0] - x0, paste_box[1] - y0))
     target.paste(canvas, (x0, y0))
-    return box
+    return paste_box
+
+
+def source_layout_instructions(project: Path, spec: Dict[str, Any], slide: Dict[str, Any]) -> str:
+    layers = slide.get("source_layers", [])
+    if not layers:
+        return ""
+    width, height = parse_image_size(spec["image_size"])
+    lines = [
+        "Source-locked panel plan for GPT-image-2: reserve blank visual panels for exact source insertion later; "
+        "do not redraw, restyle, crop, relabel, or mutate source data/results in the generated image.\n"
+    ]
+    for idx, layer in enumerate(layers, start=1):
+        raw_path = str(layer.get("path", "")).strip()
+        if not raw_path:
+            continue
+        declared = layer_panel_box(layer, width, height)
+        margin = layer_margin_px(layer, has_panel=bool(layer.get("panel_bbox")))
+        source_size = (max(1, declared[2] - declared[0]), max(1, declared[3] - declared[1]))
+        source_path = resolve_project_path(project, raw_path)
+        if source_path.exists() and Image is not None:
+            try:
+                source_size = source_image_for_layer(source_path, layer, draw_frame=False).size
+            except Exception:
+                source_size = (max(1, declared[2] - declared[0]), max(1, declared[3] - declared[1]))
+        planned = aspect_adjusted_panel_box(declared, source_size, margin) if panel_aspect_from_source(layer) else declared
+        planned = clamp_box(planned, width, height)
+        px0, py0, px1, py1 = pixels_to_unit_rect(planned, width, height)
+        ratio = source_size[0] / max(1, source_size[1])
+        lines.append(
+            "- Layer "
+            + str(idx)
+            + f": blank panel bbox [{px0:.4f}, {py0:.4f}, {px1 - px0:.4f}, {py1 - py0:.4f}], "
+            + f"source aspect {ratio:.3f}:1, inset margin d={margin}px. "
+            + "The panel proportion should match the source aspect so later pixel insertion fits without touching borders.\n"
+        )
+    return "".join(lines)
 
 
 def load_base_background(project: Path, raw_base_dir: Optional[str], slide_no: int, size: Tuple[int, int], fallback_color: Tuple[int, int, int]) -> "Image.Image":
@@ -740,6 +946,22 @@ def load_base_background(project: Path, raw_base_dir: Optional[str], slide_no: i
                 base = base.resize(size, Image.Resampling.LANCZOS)
             return base
     die(f"base background not found for slide {slide_no}: {base_dir}")
+
+
+def load_native_panel_reference(project: Path, slide_no: int, size: Tuple[int, int]) -> Optional["Image.Image"]:
+    base_dir = project / "tmp/native_imagegen"
+    candidates = [
+        base_dir / f"slide_{slide_no:02d}_base.png",
+        base_dir / f"slide_{slide_no:02d}_background.png",
+        base_dir / f"slide_{slide_no:02d}.png",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            base = Image.open(candidate).convert("RGB")
+            if base.size != size:
+                base = base.resize(size, Image.Resampling.LANCZOS)
+            return base
+    return None
 
 
 def draw_text_items(image: "Image.Image", slide: Dict[str, Any]) -> None:
@@ -770,7 +992,8 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
     for slide in plan.get("slides", []):
         slide_no = int(slide["slide"])
         background_color = rgb(str(slide.get("background_color", "#fbfcfe")), "#fbfcfe")
-        background = load_base_background(project, args.base_dir, slide_no, (width, height), background_color)
+        base_background = load_base_background(project, args.base_dir, slide_no, (width, height), background_color)
+        background = base_background.copy()
         draw = ImageDraw.Draw(background)  # type: ignore[name-defined]
         accent = rgb(str(slide.get("accent_color", "#2f80ed")), "#2f80ed")
         if slide.get("draw_accent", True):
@@ -783,12 +1006,27 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
             source_path = resolve_project_path(project, raw_path)
             if not source_path.exists():
                 die(f"source layer not found for slide {slide_no}: {source_path}")
-            box = layer_panel_box(layer, width, height)
-            radius = int(layer.get("radius_px", 24))
             draw_frame = bool_option(layer.get("draw_frame"), args.base_dir is None)
+            geometry = source_fit_geometry(
+                project,
+                layer,
+                (width, height),
+                draw_frame=draw_frame,
+                panel_image=base_background if args.base_dir else None,
+            )
+            box = geometry["panel_box"]
+            radius = int(layer.get("radius_px", 24))
             if draw_frame:
                 draw.rounded_rectangle(box, radius=radius, fill=(255, 255, 255), outline=rgb("#d9e3ef"), width=2)
-            paste_source_image(background, project, source_path, layer, canvas_backed=draw_frame)
+            paste_source_image(
+                background,
+                project,
+                source_path,
+                layer,
+                canvas_backed=draw_frame,
+                panel_image=base_background if args.base_dir else None,
+                geometry=geometry,
+            )
 
         completed = background.copy()
         draw_text_items(completed, slide)
@@ -809,7 +1047,7 @@ def cmd_queue(args: argparse.Namespace) -> None:
         for slide in slides:
             idx = int(slide["slide"])
             job = {
-                "prompt": completed_prompt(spec, slide),
+                "prompt": completed_prompt(project, spec, slide),
                 "out": f"slide_{idx:02d}_completed.png",
                 "model": "gpt-image-2",
                 "size": spec["image_size"],
@@ -1507,10 +1745,15 @@ def rect_inside(inner: Tuple[float, float, float, float], outer: Tuple[float, fl
     )
 
 
-def source_layer_paste_rect(project: Path, layer: Dict[str, Any], image_size: Tuple[int, int]) -> Tuple[float, float, float, float]:
+def source_layer_paste_rect(
+    project: Path,
+    layer: Dict[str, Any],
+    image_size: Tuple[int, int],
+    panel_image: Optional["Image.Image"] = None,
+) -> Tuple[float, float, float, float]:
     width, height = image_size
     draw_frame = bool_option(layer.get("draw_frame"), False)
-    geometry = source_fit_geometry(project, layer, image_size, draw_frame=draw_frame)
+    geometry = source_fit_geometry(project, layer, image_size, draw_frame=draw_frame, panel_image=panel_image)
     return pixels_to_unit_rect(geometry["paste_box"], width, height)
 
 
@@ -1525,6 +1768,7 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
 
     for slide in plan.get("slides", []):
         slide_no = int(slide["slide"])
+        panel_reference = load_native_panel_reference(project, slide_no, image_size)
         text_rects = []
         for item in slide.get("text_items", []):
             bbox = item.get("bbox") or default_bbox(str(item.get("role", "body")), 0)
@@ -1532,11 +1776,15 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
         for idx, layer in enumerate(slide.get("source_layers", []), start=1):
             layer_rect = unit_rect(layer.get("bbox", []))
             draw_frame = bool_option(layer.get("draw_frame"), False)
-            geometry = source_fit_geometry(project, layer, image_size, draw_frame=draw_frame)
+            geometry = source_fit_geometry(project, layer, image_size, draw_frame=draw_frame, panel_image=panel_reference)
             width, height = image_size
             paste_rect = pixels_to_unit_rect(geometry["paste_box"], width, height)
             fit_rect = pixels_to_unit_rect(geometry["fit_region"], width, height)
-            panel_rect = unit_rect(layer["panel_bbox"]) if layer.get("panel_bbox") else None
+            panel_rect = pixels_to_unit_rect(geometry["panel_box"], width, height)
+            actual_panel_rect = pixels_to_unit_rect(geometry["actual_panel_box"], width, height)
+            declared_panel_rect = pixels_to_unit_rect(geometry["declared_panel_box"], width, height)
+            detected_panel = geometry.get("detected_panel_box")
+            detected_panel_rect = pixels_to_unit_rect(detected_panel, width, height) if detected_panel else None
             row = {
                 "slide": slide_no,
                 "layer": idx,
@@ -1544,9 +1792,13 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
                 "bbox": list(layer_rect),
                 "paste_bbox": list(paste_rect),
                 "fit_bbox": list(fit_rect),
-                "panel_bbox": list(panel_rect) if panel_rect else None,
+                "panel_bbox": list(panel_rect),
+                "actual_panel_bbox": list(actual_panel_rect),
+                "declared_panel_bbox": list(declared_panel_rect),
+                "detected_panel_bbox": list(detected_panel_rect) if detected_panel_rect else None,
                 "draw_frame": draw_frame,
                 "margin_px": geometry["margin_px"],
+                "panel_aspect_from_source": geometry["panel_aspect_from_source"],
                 "source_size_px": list(geometry["source_size"]),
                 "slack_px": list(geometry["slack_px"]),
                 "center_delta_px": [round(float(v), 3) for v in geometry["center_delta_px"]],
@@ -1555,9 +1807,11 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
 
             if not rect_inside(layer_rect, (0.0, 0.0, 1.0, 1.0), tolerance=0.0):
                 issues.append({"slide": slide_no, "layer": idx, "kind": "out_of_slide", "message": "source layer bbox is outside the slide"})
-            if panel_rect and not rect_inside(paste_rect, panel_rect, tolerance=0.012):
-                issues.append({"slide": slide_no, "layer": idx, "kind": "outside_panel", "message": "source image paste area is not fully inside its declared panel_bbox"})
-            if panel_rect and not rect_inside(paste_rect, fit_rect, tolerance=0.004):
+            if not rect_inside(paste_rect, actual_panel_rect, tolerance=0.002):
+                issues.append({"slide": slide_no, "layer": idx, "kind": "outside_actual_panel", "message": "source image paste area is not fully inside the detected or declared panel"})
+            if not rect_inside(paste_rect, panel_rect, tolerance=0.002):
+                issues.append({"slide": slide_no, "layer": idx, "kind": "outside_aspect_panel", "message": "source image paste area is not fully inside the source-aspect panel"})
+            if not rect_inside(paste_rect, fit_rect, tolerance=0.004):
                 issues.append({"slide": slide_no, "layer": idx, "kind": "margin_violation", "message": "source image paste area is not inside the panel inset by margin d"})
             if max(abs(float(v)) for v in geometry["center_delta_px"]) > 1.0:
                 issues.append({"slide": slide_no, "layer": idx, "kind": "center_misaligned", "message": "source image center is not aligned with the inset panel center"})

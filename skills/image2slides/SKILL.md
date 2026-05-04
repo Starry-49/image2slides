@@ -38,7 +38,7 @@ If any required field is missing, ask only for the missing fields and stop befor
 5. Save full slide images in `completed/` and matching text-free pages in `background/`.
    When a user marks data/results as non-mutating, keep those charts or figures source-locked. They may be placed as exact `source_layers` from the wiki instead of being redrawn as generated facts; the GPT-image-2 pass still owns the surrounding slide composition and matched text-free background.
    When native imagegen already created visual panels, set `draw_frame: false` on matching `source_layers` or rely on the `--base-dir` default so the compositor does not add duplicate rounded rectangles.
-   Source-layer fitting is deterministic: trim blank pixels while preserving content, use the declared `panel_bbox` as the fill region, inset that panel by constant margin `d` (`fit_margin_px`, default 32 px), scale the trimmed image so each edge is `<=` its parallel inset-panel edge, minimize remaining `B - A` slack by maximizing scale, and align image center to inset-panel center.
+   Source-layer fitting is deterministic and bidirectional: queue prompts reserve blank panels whose proportions match the source image; compose trims blank pixels while preserving content, detects the actual native panel edge when a GPT-image-2 base exists, optionally reduces that panel to the source aspect ratio, insets by constant margin `d` (`fit_margin_px`, default 32 px), scales the trimmed image so each edge is `<=` its parallel inset-panel edge, minimizes remaining `B - A` slack by maximizing scale, and aligns image center to inset-panel center.
 6. Run analysis:
    ```bash
    python skills/image2slides/scripts/image2slides.py analyze --project <deck-dir>
@@ -55,8 +55,8 @@ If any required field is missing, ask only for the missing fields and stop befor
    python skills/image2slides/scripts/image2slides.py qa --project <deck-dir> --strict
    ```
    This renders the PPTX when local tools are available, compares each rendered page with `completed/`, and writes pixel/patch similarity reports.
-   QA also writes `reports/source_layer_audit.md`. This fixed review item checks that source figures stay inside declared `panel_bbox`, do not overlap editable text, and do not add duplicate rounded-rectangle frames over native imagegen panels.
-   The audit records `fit_bbox`, `paste_bbox`, `margin_px`, `slack_px`, and `center_delta_px` for every source layer.
+   QA also writes `reports/source_layer_audit.md`. This fixed review item checks that source figures stay inside detected/native panels, do not overlap editable text, and do not add duplicate rounded-rectangle frames over native imagegen panels.
+   The audit records `declared_panel_bbox`, `detected_panel_bbox`, `actual_panel_bbox`, `panel_bbox`, `fit_bbox`, `paste_bbox`, `margin_px`, `slack_px`, and `center_delta_px` for every source layer.
 
 ## Prompt Rules
 
