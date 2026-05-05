@@ -19,6 +19,37 @@ npm install -g git+https://github.com/Starry-49/image2slides.git
 image2slides doctor
 ```
 
+Codex local plugin のデプロイには 2 つの方法があります。
+
+1. 自分でインストールする方法:
+
+   ```bash
+   git clone https://github.com/Starry-49/image2slides.git
+   cd image2slides
+   npm install -g .
+   npm pack
+   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides
+   rm -rf ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
+   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
+   tar -xzf image2slides-1.0.0.tgz \
+     -C ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0 \
+     --strip-components=1
+   rm image2slides-1.0.0.tgz
+   image2slides doctor
+   ```
+
+   その後、Codex を再起動または refresh して local plugin cache を再 index します。plugin manifest は `.codex-plugin/plugin.json`、slash-command skill は `skills/image2slides/SKILL.md` です。
+
+2. Codex にインストールを依頼する方法:
+
+   ```text
+   Install or refresh the local Codex plugin from /path/to/image2slides.
+   Use .codex-plugin/plugin.json as the manifest, enable the Image2Slides plugin,
+   then run `image2slides doctor` and confirm `/image2slides` is available.
+   ```
+
+   アプリが path を要求する場合は、`skills/` ではなく repository root を指定します。
+
 ローカル開発:
 
 ```bash
@@ -96,7 +127,8 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 
    出力先は `background/slide_XX_background.png` と `background/.image2slides_background_provenance.json` です。background prompt は、文字だけを除去し、レイアウト、図形、色、ジオメトリを保持することを要求します。`analyze`、`build-pptx`、`compose-source-locked`、`qa` は、未登録の local template、screenshot、deterministic drawing、古い background、現在の completed provenance に紐づかない background batch を拒否します。
    layout audit は、source 図が検出された native panel 内に収まること、panel inset ratio が trim 後の source 図の比率に合うこと、source panel/image 同士や編集可能テキストと重ならないこと、figure-first slide では図がテキストより視覚的に主役であること、native imagegen panel の上に重複した角丸フレームを追加しないことを固定チェックします。
-   source fitting は blank pixel を先に裁ち、GPT-image-2 prompt では source 画像の比率に合う panel を予約します。compose 時には生成された下地または background の実際の panel エッジを検出し、`fit_margin_px` で内側に縮め、4 辺の平行エッジ制約の下で最大スケール化して slack を最小化し、画像中心を inset panel の中心に合わせます。
+   source fitting は blank pixel を先に裁ち、GPT-image-2 prompt では source 画像の比率に合う panel を予約します。compose 時には生成された下地または background の実際の panel エッジを検出し、`fit_margin_px` で内側に縮め、4 辺の平行エッジ制約の下で最大スケール化して slack を最小化し、画像中心を inset panel の中心に合わせます。生成/native panel では、layer がより小さい値を指定しても inset margin は最低 32 px です。source 図の edge-connected near-white blank はデフォルトで透明に貼り込まれ、図表の白い矩形背景が生成 panel を覆わないようにします。計画上の `bbox` は detector の search hint であり、実際の panel ではありません。生成された panel 比率が trim 済み source 比率と合わない場合は、source を伸縮・裁断せず GPT-image-2 panel を再生成します。
+   `queue` は各 source panel を `wiki/04_slide_plan.json` の `non_editable_image_panel` layout boundary としても書き込みます。編集可能な PowerPoint テキストはこの領域に入れてはいけません。source chart、diagram、schematic、icon の内部に最初からある文字は画像資産の一部として保存し、ユーザーが明示的に抽出を求めない限り editable text diagnostic から除外します。
 
    Figure-first standard:
    - 値、軸、統計関係を正確に保つ必要がある result/data figure だけを exact source panel として残す
@@ -122,6 +154,7 @@ python3 skills/image2slides/scripts/image2slides.py doctor
    - `analysis/manifest.json`
 
    解析器は `completed/` と `background/` を比較し、ピクセル差分をテキスト mask として扱い、主背景色、テキスト領域、低変化の blank 領域を推定します。
+   この mask を文字補正の基準にする前に、completed/background の差分が主に文字だけかを確認してください。panel、figure、illustration など非テキスト形状が動いている場合は、PPT テキストを調整するのではなく GPT-image-2 background edit を再生成します。
 
 7. 編集可能な PPTX を作成します。
 
@@ -145,9 +178,14 @@ python3 skills/image2slides/scripts/image2slides.py doctor
    - `reports/qa_similarity.json`
    - `reports/qa_report.md`
    - `reports/source_layer_audit.md`
+   - `reports/text_alignment_audit.md`
+   - `reports/source_render_audit.md`
    - `reports/background_audit.md`
+   - `reports/content_boundary_audit.md`
+   - `reports/content_boundary_overlays/`
 
-   LibreOffice と `pdftoppm` が使える場合、QA は PPTX をローカルでレンダリングし、`completed/` と pixel / patch similarity を比較し、固定の source-layer layout audit も再実行します。strict mode では byte-identical または視覚的に近すぎる background page も拒否します。default strict similarity preset は overall pixel similarity >= 0.90 を要求し、GPT-image-2 reference text と editable PowerPoint text の通常の font rasterization 差分だけを許容します。
+   LibreOffice と `pdftoppm` が使える場合、QA は PPTX をローカルでレンダリングし、`completed/` と pixel / patch similarity を比較し、固定の source-layer layout audit も再実行します。rendered source crop が final source-locked background crop と一致すること、source transparent blank が source-free native panel と一致すること、editable text が completed reference と局所的に揃うことも確認します。strict mode では byte-identical または視覚的に近すぎる background page も拒否します。default strict similarity preset は overall pixel similarity >= 0.90 を要求し、GPT-image-2 reference text と editable PowerPoint text の通常の font rasterization 差分だけを許容します。
+   content-boundary audit は layout confidence を補強する診断です。main blank color を検出し、`blank_zone`、`forbidden_zone`、`text_fill_zone` を定義し、source panel を no-text region として扱い、画像内部ラベルを除外し、Codex/LLM review 用 overlay を書き出します。単独で実行する場合は `image2slides audit-boundaries --project decks/my-deck --rendered-dir reports/rendered` を使います。これらの warning も QA 失敗にしたい場合だけ `qa` に `--boundary-strict` を追加します。
 
 どこかの段階がこの順序から外れた場合は、最初に失効した段階から下流 artifact を削除し、最後の信頼できる checkpoint から再開します。例えば `completed/` が無効なら completed、background、analysis、PPTX、QA をやり直し、`background/` が無効なら background、analysis、PPTX、QA をやり直します。
 

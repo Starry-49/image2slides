@@ -1,9 +1,9 @@
 {
   "name": "image2slides",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Codex plugin and CLI workflow for turning GPT-image slide visuals into editable PowerPoint decks.",
   "license": "MIT",
-  "homepage": "https://github.com/Starry-49/image2slides#readme",
+  "homepage": "https://starry-49.github.io/image2slides/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Starry-49/image2slides.git"

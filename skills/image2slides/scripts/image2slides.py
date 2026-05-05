@@ -63,10 +63,28 @@ PROJECT_DIRS = (
 
 EMU_PER_INCH = 914400
 DEFAULT_PANEL_MARGIN_PX = 32
+DEFAULT_GENERATED_PANEL_MIN_MARGIN_PX = 32
 DEFAULT_PANEL_ASPECT_TOLERANCE = 0.04
 DEFAULT_FIGURE_FIRST_MIN_SOURCE_AREA = 0.26
 DEFAULT_FIGURE_FIRST_MIN_SOURCE_TEXT_RATIO = 1.15
 DEFAULT_FIGURE_FIRST_MAX_TEXT_CHARS = 140
+DEFAULT_TEXT_MIN_PIXEL_SIMILARITY = 0.78
+DEFAULT_TEXT_MAX_BAD_PIXEL_RATIO_32 = 0.30
+DEFAULT_TEXT_MIN_INK_IOU = 0.45
+DEFAULT_TEXT_MAX_CENTER_DELTA = 0.16
+DEFAULT_SOURCE_MIN_RENDERED_SIMILARITY = 0.94
+DEFAULT_SOURCE_MAX_RENDERED_BAD_PIXEL_RATIO_32 = 0.08
+DEFAULT_SOURCE_BLANK_MIN_RENDERED_SIMILARITY = 0.97
+DEFAULT_SOURCE_BLANK_MAX_RENDERED_BAD_PIXEL_RATIO_32 = 0.04
+DEFAULT_BOUNDARY_BLANK_DISTANCE = 36.0
+DEFAULT_BOUNDARY_TEXT_DIFF_THRESHOLD = 30.0
+DEFAULT_BOUNDARY_FORBIDDEN_DILATE_PX = 22
+DEFAULT_BOUNDARY_SAFE_MARGIN_RATIO = 0.035
+DEFAULT_BOUNDARY_MAX_TEXT_OUTSIDE_FILL = 0.35
+DEFAULT_BOUNDARY_MAX_TEXT_FORBIDDEN_OVERLAP = 0.12
+DEFAULT_BOUNDARY_MIN_CLEARANCE_P10_PX = 12
+BOUNDARY_GRID_COLS = 32
+BOUNDARY_GRID_ROWS = 18
 COMPLETED_PROVENANCE = ".image2slides_completed_provenance.json"
 BACKGROUND_PROVENANCE = ".image2slides_background_provenance.json"
 COMPLETED_ALLOWED_METHODS = {
@@ -613,6 +631,50 @@ def slide_plan(project: Path) -> Dict[str, Any]:
     return read_json(project / "wiki/04_slide_plan.json")
 
 
+def ensure_source_layout_boundaries(project: Path, *, write: bool = True) -> int:
+    """Mirror source-layer panels into plan-level non-editable layout boundaries."""
+    plan_path = project / "wiki/04_slide_plan.json"
+    plan = read_json(plan_path)
+    changed = 0
+    for slide in plan.get("slides", []):
+        boundaries = [
+            boundary
+            for boundary in slide.get("layout_boundaries", [])
+            if boundary.get("source") != "source_layer_panel"
+        ]
+        for idx, layer in enumerate(slide.get("source_layers", []), start=1):
+            bbox = layer.get("panel_bbox") or layer.get("bbox")
+            if not bbox or len(bbox) != 4:
+                continue
+            boundaries.append(
+                {
+                    "id": f"source_panel_{idx}",
+                    "kind": "non_editable_image_panel",
+                    "source": "source_layer_panel",
+                    "bbox": [round(float(value), 5) for value in bbox],
+                    "editable_text_allowed": False,
+                    "asset_internal_text_policy": "preserve_as_image_content",
+                    "review_rule": (
+                        "source image panel is a planned visual region; do not place editable text inside it "
+                        "or strip text contained inside the image asset"
+                    ),
+                }
+            )
+        existing = slide.get("layout_boundaries", [])
+        if boundaries != existing:
+            slide["layout_boundaries"] = boundaries
+            changed += 1
+        if slide.get("source_layers") and not slide.get("illustration_text_policy"):
+            slide["illustration_text_policy"] = (
+                "preserve_internal_text_as_image_content; do not extract, delete, or align "
+                "asset-internal labels as editable text unless explicitly requested"
+            )
+            changed += 1
+    if changed and write:
+        write_json(plan_path, plan)
+    return changed
+
+
 def base_prompt(spec: Dict[str, Any]) -> str:
     return (
         "Use case: productivity-visual. "
@@ -868,6 +930,69 @@ def trim_whitespace(image: "Image.Image", *, threshold: int = 248, margin: int =
     return image.crop((x0, y0, x1, y1))
 
 
+def edge_connected_blank_mask(
+    image: "Image.Image",
+    *,
+    threshold: int = 248,
+    max_saturation: int = 18,
+) -> "np.ndarray":
+    """Return edge-connected near-white blank pixels.
+
+    Source figures often carry a large white plotting canvas. Pasting that
+    canvas opaquely can visually cover the generated panel even when the
+    source bbox is mathematically inside the panel. Only edge-connected blank
+    is removed, so enclosed white data cells are preserved.
+    """
+    arr = np.asarray(image.convert("RGB")).astype(np.int16)
+    near_blank = (
+        (arr[:, :, 0] >= threshold)
+        & (arr[:, :, 1] >= threshold)
+        & (arr[:, :, 2] >= threshold)
+        & ((arr.max(axis=2) - arr.min(axis=2)) <= max_saturation)
+    )
+    height, width = near_blank.shape
+    blank = np.zeros((height, width), dtype=bool)
+    stack: List[Tuple[int, int]] = []
+    for x in range(width):
+        if near_blank[0, x]:
+            blank[0, x] = True
+            stack.append((0, x))
+        if near_blank[height - 1, x] and not blank[height - 1, x]:
+            blank[height - 1, x] = True
+            stack.append((height - 1, x))
+    for y in range(height):
+        if near_blank[y, 0] and not blank[y, 0]:
+            blank[y, 0] = True
+            stack.append((y, 0))
+        if near_blank[y, width - 1] and not blank[y, width - 1]:
+            blank[y, width - 1] = True
+            stack.append((y, width - 1))
+    while stack:
+        y, x = stack.pop()
+        for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+            if 0 <= yy < height and 0 <= xx < width and near_blank[yy, xx] and not blank[yy, xx]:
+                blank[yy, xx] = True
+                stack.append((yy, xx))
+    return blank
+
+
+def source_alpha_mask_for_layer(
+    source: "Image.Image",
+    layer: Dict[str, Any],
+    *,
+    draw_frame: bool,
+) -> Optional["Image.Image"]:
+    if draw_frame or not bool_option(layer.get("mask_edge_blank"), True):
+        return None
+    threshold = int(layer.get("blank_alpha_threshold", 248))
+    max_saturation = int(layer.get("blank_alpha_max_saturation", 18))
+    blank = edge_connected_blank_mask(source, threshold=threshold, max_saturation=max_saturation)
+    if float(blank.mean()) < 0.01:
+        return None
+    alpha = np.where(blank, 0, 255).astype("uint8")
+    return Image.fromarray(alpha, mode="L")
+
+
 def clamp_box(box: Tuple[int, int, int, int], width: int, height: int) -> Tuple[int, int, int, int]:
     x0, y0, x1, y1 = box
     x0 = max(0, min(width - 1, int(x0)))
@@ -917,6 +1042,168 @@ def nearest_edge(candidates: List[Tuple[int, float]], target: int, window: int) 
     return scoped[0][0]
 
 
+def mask_segments(row: "np.ndarray", *, min_width: int) -> List[Tuple[int, int]]:
+    segments: List[Tuple[int, int]] = []
+    start: Optional[int] = None
+    for idx, value in enumerate(row):
+        if bool(value) and start is None:
+            start = idx
+        if start is not None and (not bool(value) or idx == len(row) - 1):
+            end = idx if not bool(value) else idx + 1
+            if end - start >= min_width:
+                segments.append((start, end))
+            start = None
+    return segments
+
+
+def panel_line_candidates(
+    mask: "np.ndarray",
+    search: Tuple[int, int, int, int],
+    declared_box: Tuple[int, int, int, int],
+    target_y: int,
+) -> List[Tuple[float, int, int, int]]:
+    sx0, sy0, sx1, sy1 = search
+    dx0, _, dx1, _ = declared_box
+    declared_w = max(1, dx1 - dx0)
+    center_x = (dx0 + dx1) / 2.0
+    min_segment_w = max(64, int(declared_w * 0.30))
+    candidates: List[Tuple[float, int, int, int]] = []
+    for y in range(sy0, sy1):
+        row = mask[y, sx0:sx1]
+        for start, end in mask_segments(row, min_width=min_segment_w):
+            x0 = sx0 + start
+            x1 = sx0 + end
+            overlap = max(0, min(x1, dx1) - max(x0, dx0))
+            if not (x0 - 120 <= center_x <= x1 + 120 or overlap >= min_segment_w * 0.25):
+                continue
+            score = abs(y - target_y) - (x1 - x0) * 0.002
+            candidates.append((score, y, x0, x1))
+    candidates.sort(key=lambda item: item[0])
+    return candidates[:12]
+
+
+def panel_vertical_line_candidates(
+    mask: "np.ndarray",
+    search: Tuple[int, int, int, int],
+    declared_box: Tuple[int, int, int, int],
+    target_x: int,
+) -> List[Tuple[float, int, int, int]]:
+    sx0, sy0, sx1, sy1 = search
+    _, dy0, _, dy1 = declared_box
+    declared_h = max(1, dy1 - dy0)
+    center_y = (dy0 + dy1) / 2.0
+    min_segment_h = max(48, int(declared_h * 0.28))
+    candidates: List[Tuple[float, int, int, int]] = []
+    for x in range(sx0, sx1):
+        col = mask[sy0:sy1, x]
+        for start, end in mask_segments(col, min_width=min_segment_h):
+            y0 = sy0 + start
+            y1 = sy0 + end
+            overlap = max(0, min(y1, dy1) - max(y0, dy0))
+            if not (y0 - 120 <= center_y <= y1 + 120 or overlap >= min_segment_h * 0.25):
+                continue
+            score = abs(x - target_x) - (y1 - y0) * 0.002
+            candidates.append((score, x, y0, y1))
+    candidates.sort(key=lambda item: item[0])
+    return candidates[:12]
+
+
+def detect_panel_box_from_light_border(
+    image: "Image.Image",
+    declared_box: Tuple[int, int, int, int],
+) -> Optional[Tuple[int, int, int, int]]:
+    """Detect light blue rounded-card borders from a source-free background."""
+    width, height = image.size
+    declared_box = clamp_box(declared_box, width, height)
+    panel_w = max(1, declared_box[2] - declared_box[0])
+    panel_h = max(1, declared_box[3] - declared_box[1])
+    search = expand_box(declared_box, width, height, max(160, int(panel_w * 0.45)), max(160, int(panel_h * 0.45)))
+    arr = np.asarray(image.convert("RGB")).astype(np.int16)
+    red = arr[:, :, 0]
+    green = arr[:, :, 1]
+    blue = arr[:, :, 2]
+    # Imagegen panel borders in this workflow are pale blue strokes. This mask
+    # intentionally ignores dark chart strokes and source figure edges.
+    mask = (
+        (red > 165)
+        & (green > 180)
+        & (blue > 195)
+        & ((blue - red) > 8)
+        & ((green - red) > 0)
+        & ((blue - green) >= 0)
+    )
+    top_candidates = panel_line_candidates(mask, search, declared_box, declared_box[1])
+    bottom_candidates = panel_line_candidates(mask, search, declared_box, declared_box[3])
+    left_candidates = panel_vertical_line_candidates(mask, search, declared_box, declared_box[0])
+    right_candidates = panel_vertical_line_candidates(mask, search, declared_box, declared_box[2])
+    if not top_candidates or not bottom_candidates:
+        return None
+
+    best: Optional[Tuple[float, Tuple[int, int, int, int]]] = None
+    min_height = max(48, int(panel_h * 0.25))
+    min_width = max(96, int(panel_w * 0.25))
+    declared_center_x = (declared_box[0] + declared_box[2]) / 2.0
+    declared_center_y = (declared_box[1] + declared_box[3]) / 2.0
+    if left_candidates and right_candidates:
+        for left in left_candidates:
+            for right in right_candidates:
+                left_x = left[1]
+                right_x = right[1]
+                if right_x <= left_x + min_width:
+                    continue
+                for top in top_candidates:
+                    top_y = top[1]
+                    if top[2] > left_x + panel_w * 0.35 or top[3] < right_x - panel_w * 0.35:
+                        continue
+                    for bottom in bottom_candidates:
+                        bottom_y = bottom[1]
+                        if bottom_y <= top_y + min_height:
+                            continue
+                        if bottom[2] > left_x + panel_w * 0.35 or bottom[3] < right_x - panel_w * 0.35:
+                            continue
+                        # A rounded panel's vertical strokes do not span the
+                        # rounded corners. They still need to cover most of
+                        # the candidate height, otherwise a decorative line can
+                        # be mistaken for the actual panel.
+                        height_span = bottom_y - top_y
+                        left_overlap = max(0, min(left[3], bottom_y) - max(left[2], top_y))
+                        right_overlap = max(0, min(right[3], bottom_y) - max(right[2], top_y))
+                        if left_overlap < height_span * 0.45 or right_overlap < height_span * 0.45:
+                            continue
+                        box = clamp_box((left_x, top_y, right_x + 1, bottom_y + 1), width, height)
+                        box_center_x = (box[0] + box[2]) / 2.0
+                        box_center_y = (box[1] + box[3]) / 2.0
+                        center_penalty = abs(box_center_x - declared_center_x) * 0.18 + abs(box_center_y - declared_center_y) * 0.35
+                        edge_penalty = abs(top_y - declared_box[1]) + abs(bottom_y - declared_box[3]) * 0.65
+                        score = left[0] + right[0] + top[0] + bottom[0] + center_penalty + edge_penalty
+                        if best is None or score < best[0]:
+                            best = (score, box)
+    if best is not None:
+        return best[1]
+
+    for top in top_candidates:
+        for bottom in bottom_candidates:
+            top_y = top[1]
+            bottom_y = bottom[1]
+            if abs(bottom_y - top_y) < min_height:
+                continue
+            left = min(top[2], bottom[2])
+            right = max(top[3], bottom[3])
+            intersect_left = max(top[2], bottom[2])
+            intersect_right = min(top[3], bottom[3])
+            if intersect_right - intersect_left >= min_width:
+                left = intersect_left
+                right = intersect_right
+            if right - left < min_width:
+                continue
+            y0 = min(top_y, bottom_y)
+            y1 = max(top_y, bottom_y) + 1
+            score = abs(top_y - declared_box[1]) + abs(bottom_y - declared_box[3]) - (right - left) * 0.002
+            if best is None or score < best[0]:
+                best = (score, clamp_box((left, y0, right, y1), width, height))
+    return best[1] if best else None
+
+
 def detect_panel_box_from_image(
     image: "Image.Image",
     declared_box: Tuple[int, int, int, int],
@@ -925,6 +1212,9 @@ def detect_panel_box_from_image(
     require_image_libs()
     width, height = image.size
     declared_box = clamp_box(declared_box, width, height)
+    light_border_panel = detect_panel_box_from_light_border(image, declared_box)
+    if light_border_panel is not None:
+        return light_border_panel
     panel_w = declared_box[2] - declared_box[0]
     panel_h = declared_box[3] - declared_box[1]
     pad_x = max(96, int(panel_w * 0.28), int(width * 0.035))
@@ -1012,6 +1302,16 @@ def source_image_for_layer(path: Path, layer: Dict[str, Any], *, draw_frame: boo
     return source
 
 
+def source_image_and_mask_for_layer(
+    path: Path,
+    layer: Dict[str, Any],
+    *,
+    draw_frame: bool,
+) -> Tuple["Image.Image", Optional["Image.Image"]]:
+    source = source_image_for_layer(path, layer, draw_frame=draw_frame)
+    return source, source_alpha_mask_for_layer(source, layer, draw_frame=draw_frame)
+
+
 def aspect_adjusted_panel_box(
     panel: Tuple[int, int, int, int],
     source_size: Tuple[int, int],
@@ -1068,42 +1368,19 @@ def fit_source_bounds(source_size: Tuple[int, int], box: Tuple[int, int, int, in
     return px, py, px + fitted_w, py + fitted_h
 
 
-def clear_panel_interior(
-    image: "Image.Image",
-    boxes: Sequence[Tuple[int, int, int, int]],
-    *,
-    fill: Tuple[int, int, int] = (255, 255, 255),
-    keep_border_px: int = 6,
-) -> None:
-    """Clear a detection-only copy while preserving the generated panel edge."""
-    draw = ImageDraw.Draw(image)  # type: ignore[name-defined]
-    width, height = image.size
-    for box in boxes:
-        x0, y0, x1, y1 = clamp_box(box, width, height)
-        border = max(0, int(keep_border_px))
-        inner = (x0 + border, y0 + border, x1 - border, y1 - border)
-        if inner[2] <= inner[0] or inner[3] <= inner[1]:
-            continue
-        draw.rectangle(inner, fill=fill)
-
-
 def source_panel_detection_reference(
     slide: Dict[str, Any],
     image: "Image.Image",
     image_size: Tuple[int, int],
 ) -> "Image.Image":
-    """Return a source-free copy for detecting generated panel borders."""
-    reference = image.copy()
-    width, height = image_size
-    for layer in slide.get("source_layers", []):
-        if bool_option(layer.get("draw_frame"), False):
-            continue
-        try:
-            declared = layer_panel_box(layer, width, height)
-        except Exception:
-            continue
-        clear_panel_interior(reference, [declared], keep_border_px=int(layer.get("panel_border_keep_px", 6)))
-    return reference
+    """Return the source-free panel reference used for detecting generated panel borders.
+
+    The declared source-layer box is only a search hint. Never clear that hint
+    area before detection; if the hint is wrong, clearing it creates a fake
+    edge and turns the wrong paste location into a false panel.
+    """
+    _ = slide, image_size
+    return image.copy()
 
 
 def layer_margin_px(layer: Dict[str, Any], *, has_panel: bool) -> int:
@@ -1141,17 +1418,13 @@ def source_fit_geometry(
         if reference.size != image_size:
             reference = reference.resize(image_size, Image.Resampling.LANCZOS)
         detected_panel = detect_panel_box_from_image(reference, declared_panel)
+        if detected_panel is not None and not draw_frame:
+            # Native imagegen panels carry borders, shadows, and rounded-card
+            # affordances. A too-small layer override can be mathematically
+            # inside the panel while visually covering the panel shell.
+            margin = max(margin, DEFAULT_GENERATED_PANEL_MIN_MARGIN_PX)
 
     rejected_detected_panel = None
-    if detected_panel is not None and panel_aspect_from_source(layer):
-        declared_error = panel_inset_ratio_error(declared_panel, source_size, margin)
-        detected_error = panel_inset_ratio_error(detected_panel, source_size, margin)
-        detection_aspect_tolerance = float(
-            layer.get("panel_detection_aspect_tolerance", layer.get("panel_aspect_tolerance", 0.08))
-        )
-        if detected_error > detection_aspect_tolerance and declared_error + 0.02 < detected_error:
-            rejected_detected_panel = detected_panel
-            detected_panel = None
 
     actual_panel = detected_panel or declared_panel
     panel = actual_panel
@@ -1191,19 +1464,21 @@ def paste_source_image(
 ) -> Tuple[int, int, int, int]:
     if geometry is None:
         geometry = source_fit_geometry(project, layer, target.size, draw_frame=canvas_backed, panel_image=panel_image)
-    source = source_image_for_layer(path, layer, draw_frame=canvas_backed)
+    source, source_mask = source_image_and_mask_for_layer(path, layer, draw_frame=canvas_backed)
     paste_box = geometry["paste_box"]
     fitted_w = paste_box[2] - paste_box[0]
     fitted_h = paste_box[3] - paste_box[1]
     source = source.resize((fitted_w, fitted_h), Image.Resampling.LANCZOS)
+    if source_mask is not None:
+        source_mask = source_mask.resize((fitted_w, fitted_h), Image.Resampling.LANCZOS)
     if not canvas_backed:
-        target.paste(source, paste_box[:2])
+        target.paste(source, paste_box[:2], source_mask)
         return paste_box
     x0, y0, x1, y1 = geometry["panel_box"]
     target_w = max(1, x1 - x0)
     target_h = max(1, y1 - y0)
     canvas = Image.new("RGB", (target_w, target_h), (255, 255, 255))
-    canvas.paste(source, (paste_box[0] - x0, paste_box[1] - y0))
+    canvas.paste(source, (paste_box[0] - x0, paste_box[1] - y0), source_mask)
     target.paste(canvas, (x0, y0))
     return paste_box
 
@@ -1215,7 +1490,10 @@ def source_layout_instructions(project: Path, spec: Dict[str, Any], slide: Dict[
     width, height = parse_image_size(spec["image_size"])
     lines = [
         "Source-locked panel plan for GPT-image-2: reserve blank visual panels for exact source insertion later; "
-        "do not redraw, restyle, crop, relabel, or mutate source data/results in the generated image.\n"
+        "do not redraw, restyle, crop, relabel, or mutate source data/results in the generated image. "
+        "Every reserved source panel is a non-editable visual boundary: do not place editable slide text inside it. "
+        "Text already printed inside a source chart, diagram, schematic, or icon belongs to the image asset and must be "
+        "preserved as image content, not extracted into the PowerPoint text alignment mask unless the user explicitly asks.\n"
     ]
     for idx, layer in enumerate(layers, start=1):
         raw_path = str(layer.get("path", "")).strip()
@@ -1223,6 +1501,8 @@ def source_layout_instructions(project: Path, spec: Dict[str, Any], slide: Dict[
             continue
         declared = layer_panel_box(layer, width, height)
         margin = layer_margin_px(layer, has_panel=bool(layer.get("panel_bbox")))
+        if not bool_option(layer.get("draw_frame"), False) and panel_detection_enabled(layer):
+            margin = max(margin, DEFAULT_GENERATED_PANEL_MIN_MARGIN_PX)
         source_size = (max(1, declared[2] - declared[0]), max(1, declared[3] - declared[1]))
         source_path = resolve_project_path(project, raw_path)
         if source_path.exists() and Image is not None:
@@ -1239,7 +1519,9 @@ def source_layout_instructions(project: Path, spec: Dict[str, Any], slide: Dict[
             + str(idx)
             + f": blank panel bbox [{px0:.4f}, {py0:.4f}, {px1 - px0:.4f}, {py1 - py0:.4f}], "
             + f"source aspect {ratio:.3f}:1, inset margin d={margin}px. "
-            + "The panel proportion should match the source aspect so later pixel insertion fits without touching borders.\n"
+            + "The panel proportion must match the source aspect so later pixel insertion fits without touching borders. "
+            + "This panel is a planned non-composable region for editable text. "
+            + "If the composition cannot preserve this ratio, regenerate the panel instead of stretching or cropping the source.\n"
         )
     return "".join(lines)
 
@@ -1401,6 +1683,12 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
                 draw_frame=draw_frame,
                 panel_image=detection_reference,
             )
+            if not draw_frame and geometry.get("detected_panel_box") is None:
+                die(
+                    f"source layer panel was not detected for slide {slide_no}; "
+                    "the declared source bbox is only a search hint, not the panel. "
+                    "Provide a source-free imagegen panel reference under tmp/native_imagegen or regenerate the background."
+                )
             layer_geometries.append((layer, source_path, geometry, draw_frame))
 
         for layer, _source_path, geometry, draw_frame in layer_geometries:
@@ -1477,6 +1765,9 @@ def cmd_queue(args: argparse.Namespace) -> None:
     normalized = normalize_source_panels(project)
     if normalized:
         print(f"Normalized {normalized} source-layer panel bbox(es) to trimmed source aspect")
+    boundary_changes = ensure_source_layout_boundaries(project)
+    if boundary_changes:
+        print(f"Wrote {boundary_changes} source panel layout boundary update(s)")
     slides = slide_plan(project)["slides"]
     completed_path = project / "prompts/completed_prompts.jsonl"
     background_path = project / "prompts/background_edit_prompts.jsonl"
@@ -1511,12 +1802,19 @@ def cmd_queue(args: argparse.Namespace) -> None:
 def cmd_normalize_source_panels(args: argparse.Namespace) -> None:
     project = Path(args.project).resolve()
     changed = normalize_source_panels(project, write=not args.check)
+    boundary_changes = ensure_source_layout_boundaries(project, write=not args.check)
     if args.check:
         print(f"Source-layer panel bbox(es) needing normalization: {changed}")
-        if args.strict and changed:
-            die(f"{changed} source-layer panel bbox(es) do not match trimmed source aspect")
+        print(f"Source panel layout boundary update(s) needed: {boundary_changes}")
+        if args.strict and (changed or boundary_changes):
+            die(
+                f"{changed} source-layer panel bbox(es) do not match trimmed source aspect; "
+                f"{boundary_changes} source panel boundary update(s) are missing"
+            )
         return
     print(f"Normalized {changed} source-layer panel bbox(es) to trimmed source aspect")
+    if boundary_changes:
+        print(f"Wrote {boundary_changes} source panel layout boundary update(s)")
 
 
 def default_imagegen_cli() -> Path:
@@ -2233,6 +2531,288 @@ def compare_images(a_path: Path, b_path: Path, max_width: int = 768) -> Dict[str
     }
 
 
+def compare_image_arrays(arr_a: "np.ndarray", arr_b: "np.ndarray") -> Dict[str, Any]:
+    diff = np.abs(arr_a.astype(np.float32) - arr_b.astype(np.float32))
+    diff_luma = diff.mean(axis=2)
+    mae = float(diff.mean())
+    return {
+        "pixel_similarity": round(max(0.0, 1.0 - mae / 255.0), 5),
+        "mae": round(mae, 3),
+        "bad_pixel_ratio_32": round(float((diff_luma > 32).mean()), 5),
+        "bad_pixel_ratio_64": round(float((diff_luma > 64).mean()), 5),
+    }
+
+
+def compare_image_arrays_masked(
+    arr_a: "np.ndarray",
+    arr_b: "np.ndarray",
+    mask: Optional["np.ndarray"] = None,
+) -> Dict[str, Any]:
+    if mask is None:
+        return compare_image_arrays(arr_a, arr_b)
+    selected = mask > 8
+    if not selected.any():
+        return {
+            "pixel_similarity": 1.0,
+            "mae": 0.0,
+            "bad_pixel_ratio_32": 0.0,
+            "bad_pixel_ratio_64": 0.0,
+        }
+    diff = np.abs(arr_a.astype(np.float32) - arr_b.astype(np.float32))
+    diff_selected = diff[selected]
+    diff_luma = diff_selected.mean(axis=1)
+    mae = float(diff_selected.mean())
+    return {
+        "pixel_similarity": round(max(0.0, 1.0 - mae / 255.0), 5),
+        "mae": round(mae, 3),
+        "bad_pixel_ratio_32": round(float((diff_luma > 32).mean()), 5),
+        "bad_pixel_ratio_64": round(float((diff_luma > 64).mean()), 5),
+    }
+
+
+def ink_mask_for_alignment(image: "Image.Image") -> "np.ndarray":
+    arr = np.asarray(image.convert("RGB")).astype(np.int16)
+    luminance = arr[:, :, 0] * 0.299 + arr[:, :, 1] * 0.587 + arr[:, :, 2] * 0.114
+    saturation = arr.max(axis=2) - arr.min(axis=2)
+    return ((luminance < 210) & (saturation > 10)) | (luminance < 160)
+
+
+def mask_bbox(mask: "np.ndarray") -> Optional[Tuple[int, int, int, int]]:
+    ys, xs = np.where(mask)
+    if len(xs) == 0:
+        return None
+    return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+
+
+def box_iou_px(a: Optional[Tuple[int, int, int, int]], b: Optional[Tuple[int, int, int, int]]) -> float:
+    if a is None or b is None:
+        return 0.0
+    x0 = max(a[0], b[0])
+    y0 = max(a[1], b[1])
+    x1 = min(a[2], b[2])
+    y1 = min(a[3], b[3])
+    inter = max(0, x1 - x0) * max(0, y1 - y0)
+    area_a = max(0, a[2] - a[0]) * max(0, a[3] - a[1])
+    area_b = max(0, b[2] - b[0]) * max(0, b[3] - b[1])
+    return inter / max(1, area_a + area_b - inter)
+
+
+def bbox_center_delta(
+    a: Optional[Tuple[int, int, int, int]],
+    b: Optional[Tuple[int, int, int, int]],
+    width: int,
+    height: int,
+) -> Tuple[float, float]:
+    if a is None or b is None:
+        return 1.0, 1.0
+    ax = (a[0] + a[2]) / 2.0
+    ay = (a[1] + a[3]) / 2.0
+    bx = (b[0] + b[2]) / 2.0
+    by = (b[1] + b[3]) / 2.0
+    return abs(ax - bx) / max(1, width), abs(ay - by) / max(1, height)
+
+
+def text_crop_box(item: Dict[str, Any], width: int, height: int, pad: float = 0.012) -> Tuple[int, int, int, int]:
+    bbox = item.get("bbox") or default_bbox(str(item.get("role", "body")), 0)
+    x, y, w, h = [float(v) for v in bbox]
+    return clamp_box(
+        (
+            int(round((x - pad) * width)),
+            int(round((y - pad) * height)),
+            int(round((x + w + pad) * width)),
+            int(round((y + h + pad) * height)),
+        ),
+        width,
+        height,
+    )
+
+
+def audit_text_alignment(project: Path, rendered_dir: Path) -> Dict[str, Any]:
+    require_image_libs()
+    spec = load_project(project)
+    plan = slide_plan(project)
+    rows: List[Dict[str, Any]] = []
+    issues: List[Dict[str, Any]] = []
+    for slide in plan.get("slides", []):
+        slide_no = int(slide["slide"])
+        completed_path = completed_image_path(project, slide_no)
+        rendered_path = rendered_slide_path(rendered_dir, slide_no)
+        if not completed_path.exists() or not rendered_path:
+            continue
+        completed = Image.open(completed_path).convert("RGB")
+        rendered = Image.open(rendered_path).convert("RGB")
+        if rendered.size != completed.size:
+            rendered = rendered.resize(completed.size, Image.Resampling.BILINEAR)
+        for idx, item in enumerate(slide.get("text_items", []), start=1):
+            text = str(item.get("text", "")).strip()
+            if not text:
+                continue
+            x0, y0, x1, y1 = text_crop_box(item, completed.width, completed.height)
+            completed_crop = completed.crop((x0, y0, x1, y1))
+            rendered_crop = rendered.crop((x0, y0, x1, y1))
+            metrics = compare_image_arrays(np.asarray(completed_crop), np.asarray(rendered_crop))
+            completed_ink = mask_bbox(ink_mask_for_alignment(completed_crop))
+            rendered_ink = mask_bbox(ink_mask_for_alignment(rendered_crop))
+            ink_iou = box_iou_px(completed_ink, rendered_ink)
+            center_delta = bbox_center_delta(completed_ink, rendered_ink, max(1, x1 - x0), max(1, y1 - y0))
+            row = {
+                "slide": slide_no,
+                "item": idx,
+                "role": item.get("role", "text"),
+                "text": text[:80],
+                "crop_bbox": list(pixels_to_unit_rect((x0, y0, x1, y1), completed.width, completed.height)),
+                **metrics,
+                "ink_iou": round(float(ink_iou), 5),
+                "center_delta": [round(float(center_delta[0]), 5), round(float(center_delta[1]), 5)],
+            }
+            rows.append(row)
+            failures = []
+            if float(metrics["pixel_similarity"]) < DEFAULT_TEXT_MIN_PIXEL_SIMILARITY:
+                failures.append("text_pixel_similarity")
+            if float(metrics["bad_pixel_ratio_32"]) > DEFAULT_TEXT_MAX_BAD_PIXEL_RATIO_32:
+                failures.append("text_bad_pixel_ratio_32")
+            if ink_iou < DEFAULT_TEXT_MIN_INK_IOU:
+                failures.append("text_ink_iou")
+            if max(center_delta) > DEFAULT_TEXT_MAX_CENTER_DELTA:
+                failures.append("text_center_delta")
+            for failure in failures:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "item": idx,
+                        "kind": failure,
+                        "message": f"editable text render does not align with GPT-image-2 completed reference for role `{row['role']}`",
+                    }
+                )
+    return {"created_at": now_iso(), "issue_count": len(issues), "issues": issues, "items": rows}
+
+
+def write_text_alignment_audit(project: Path, report: Dict[str, Any]) -> None:
+    write_json(project / "reports/text_alignment_audit.json", report)
+    lines = [
+        "# Text Alignment Audit",
+        "",
+        f"- Issues: {report['issue_count']}",
+        "",
+        "| Slide | Item | Kind | Message |",
+        "| --- | --- | --- | --- |",
+    ]
+    for issue in report["issues"]:
+        lines.append(f"| {issue['slide']} | {issue['item']} | {issue['kind']} | {issue['message']} |")
+    (project / "reports/text_alignment_audit.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def audit_source_render_alignment(project: Path, rendered_dir: Path) -> Dict[str, Any]:
+    require_image_libs()
+    spec = load_project(project)
+    plan = slide_plan(project)
+    image_size = parse_image_size(spec["image_size"])
+    rows: List[Dict[str, Any]] = []
+    issues: List[Dict[str, Any]] = []
+    for slide in plan.get("slides", []):
+        slide_no = int(slide["slide"])
+        rendered_path = rendered_slide_path(rendered_dir, slide_no)
+        if not rendered_path:
+            continue
+        rendered = Image.open(rendered_path).convert("RGB")
+        if rendered.size != image_size:
+            rendered = rendered.resize(image_size, Image.Resampling.BILINEAR)
+        native_panel_reference = load_native_panel_reference(project, slide_no, image_size)
+        current_background = load_background_panel_reference(project, slide_no, image_size)
+        panel_reference = native_panel_reference or load_background_panel_reference(project, slide_no, image_size)
+        for idx, layer in enumerate(slide.get("source_layers", []), start=1):
+            draw_frame = bool_option(layer.get("draw_frame"), False)
+            geometry = source_fit_geometry(project, layer, image_size, draw_frame=draw_frame, panel_image=panel_reference)
+            source_path = resolve_project_path(project, str(layer.get("path", "")))
+            if not source_path.exists():
+                continue
+            paste_box = geometry["paste_box"]
+            source, source_mask = source_image_and_mask_for_layer(source_path, layer, draw_frame=draw_frame)
+            target_w = max(1, paste_box[2] - paste_box[0])
+            target_h = max(1, paste_box[3] - paste_box[1])
+            source = source.resize((target_w, target_h), Image.Resampling.LANCZOS)
+            mask_arr = None
+            if source_mask is not None:
+                source_mask = source_mask.resize((target_w, target_h), Image.Resampling.LANCZOS)
+                mask_arr = np.asarray(source_mask)
+            crop = rendered.crop(paste_box)
+            expected_crop = current_background.crop(paste_box) if current_background is not None else source
+            metrics = compare_image_arrays(np.asarray(expected_crop), np.asarray(crop))
+            row = {
+                "slide": slide_no,
+                "layer": idx,
+                "path": str(layer.get("path", "")),
+                "paste_bbox": list(pixels_to_unit_rect(paste_box, image_size[0], image_size[1])),
+                **metrics,
+            }
+            blank_metrics = None
+            if (
+                mask_arr is not None
+                and native_panel_reference is not None
+                and current_background is not None
+                and (mask_arr < 8).any()
+            ):
+                native_crop = native_panel_reference.crop(paste_box)
+                current_crop = current_background.crop(paste_box)
+                blank_selector = np.where(mask_arr < 8, 255, 0).astype("uint8")
+                blank_metrics = compare_image_arrays_masked(np.asarray(native_crop), np.asarray(current_crop), blank_selector)
+                row["blank_pixel_similarity"] = blank_metrics["pixel_similarity"]
+                row["blank_bad_pixel_ratio_32"] = blank_metrics["bad_pixel_ratio_32"]
+            rows.append(row)
+            if float(metrics["pixel_similarity"]) < DEFAULT_SOURCE_MIN_RENDERED_SIMILARITY:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": idx,
+                        "kind": "source_render_similarity",
+                        "message": "rendered source crop does not match the fitted source image",
+                    }
+                )
+            if float(metrics["bad_pixel_ratio_32"]) > DEFAULT_SOURCE_MAX_RENDERED_BAD_PIXEL_RATIO_32:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": idx,
+                        "kind": "source_render_bad_pixel_ratio",
+                        "message": "rendered source crop has too many pixels different from the fitted source image",
+                    }
+                )
+            if blank_metrics is not None and float(blank_metrics["pixel_similarity"]) < DEFAULT_SOURCE_BLANK_MIN_RENDERED_SIMILARITY:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": idx,
+                        "kind": "source_blank_panel_occlusion",
+                        "message": "source edge-blank area covers the generated background panel instead of staying transparent",
+                    }
+                )
+            if blank_metrics is not None and float(blank_metrics["bad_pixel_ratio_32"]) > DEFAULT_SOURCE_BLANK_MAX_RENDERED_BAD_PIXEL_RATIO_32:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": idx,
+                        "kind": "source_blank_bad_pixel_ratio",
+                        "message": "source transparent blank area differs from the source-free background panel",
+                    }
+                )
+    return {"created_at": now_iso(), "issue_count": len(issues), "issues": issues, "layers": rows}
+
+
+def write_source_render_audit(project: Path, report: Dict[str, Any]) -> None:
+    write_json(project / "reports/source_render_audit.json", report)
+    lines = [
+        "# Source Render Alignment Audit",
+        "",
+        f"- Issues: {report['issue_count']}",
+        "",
+        "| Slide | Layer | Kind | Message |",
+        "| --- | --- | --- | --- |",
+    ]
+    for issue in report["issues"]:
+        lines.append(f"| {issue['slide']} | {issue['layer']} | {issue['kind']} | {issue['message']} |")
+    (project / "reports/source_render_audit.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def audit_background_uniqueness(project: Path, spec: Dict[str, Any]) -> Dict[str, Any]:
     validate_background_provenance(project, spec)
     issues: List[Dict[str, Any]] = []
@@ -2305,6 +2885,443 @@ def rendered_slide_path(rendered_dir: Path, slide: int) -> Optional[Path]:
             return candidate
     matches = sorted(rendered_dir.glob(f"*-{slide}.png")) + sorted(rendered_dir.glob(f"*-{slide:02d}.png"))
     return matches[0] if matches else None
+
+
+def mask_to_l_image(mask: "np.ndarray") -> "Image.Image":
+    return Image.fromarray((mask.astype("uint8") * 255), mode="L")
+
+
+def box_count_mask(mask: "np.ndarray", radius: int) -> "np.ndarray":
+    radius = max(0, int(radius))
+    if radius <= 0:
+        return mask.astype(np.uint8)
+    height, width = mask.shape
+    padded = np.pad(mask.astype(np.uint8), ((radius, radius), (radius, radius)), mode="constant")
+    integral = np.pad(padded, ((1, 0), (1, 0)), mode="constant").cumsum(axis=0).cumsum(axis=1)
+    y0 = np.arange(height)
+    y1 = y0 + radius * 2 + 1
+    x0 = np.arange(width)
+    x1 = x0 + radius * 2 + 1
+    return integral[y1[:, None], x1[None, :]] - integral[y0[:, None], x1[None, :]] - integral[y1[:, None], x0[None, :]] + integral[y0[:, None], x0[None, :]]
+
+
+def dilate_mask(mask: "np.ndarray", px: int) -> "np.ndarray":
+    if px <= 0 or not mask.any():
+        return mask
+    return box_count_mask(mask, int(px)) > 0
+
+
+def erode_mask(mask: "np.ndarray", px: int) -> "np.ndarray":
+    if px <= 0 or not mask.any():
+        return mask
+    return box_count_mask(mask, int(px)) >= (int(px) * 2 + 1) ** 2
+
+
+def open_mask(mask: "np.ndarray", px: int) -> "np.ndarray":
+    return dilate_mask(erode_mask(mask, px), px)
+
+
+def close_mask(mask: "np.ndarray", px: int) -> "np.ndarray":
+    return erode_mask(dilate_mask(mask, px), px)
+
+
+def dominant_blank_color_for_boundary(image: "Image.Image") -> Tuple[int, int, int]:
+    sample = image.convert("RGB")
+    if sample.width > 320:
+        sample = sample.resize((320, max(1, round(sample.height * 320 / sample.width))), Image.Resampling.BILINEAR)
+    arr = np.asarray(sample).astype(np.int16)
+    luminance = arr[:, :, 0] * 0.299 + arr[:, :, 1] * 0.587 + arr[:, :, 2] * 0.114
+    saturation = arr.max(axis=2) - arr.min(axis=2)
+    selector = (luminance > 170) & (saturation < 80)
+    pixels = arr[selector] if selector.any() else arr.reshape(-1, 3)
+    if pixels.size == 0:
+        return (255, 255, 255)
+    quantized = (pixels // 8) * 8
+    colors, counts = np.unique(quantized, axis=0, return_counts=True)
+    color = colors[int(counts.argmax())] + 4
+    return tuple(int(max(0, min(255, value))) for value in color.tolist())  # type: ignore[return-value]
+
+
+def unit_xyxy_to_pixels(values: Sequence[float], width: int, height: int) -> Tuple[int, int, int, int]:
+    if len(values) != 4:
+        die(f"bbox must have four values: {values}")
+    x0, y0, x1, y1 = [float(v) for v in values]
+    return clamp_box((round(x0 * width), round(y0 * height), round(x1 * width), round(y1 * height)), width, height)
+
+
+def add_unique_box(boxes: List[Tuple[int, int, int, int]], box: Tuple[int, int, int, int]) -> None:
+    if box[2] <= box[0] or box[3] <= box[1]:
+        return
+    for existing in boxes:
+        if max(abs(a - b) for a, b in zip(existing, box)) <= 3:
+            return
+    boxes.append(box)
+
+
+def source_panel_boxes_for_boundary(project: Path, slide: Dict[str, Any], width: int, height: int) -> List[Tuple[int, int, int, int]]:
+    boxes: List[Tuple[int, int, int, int]] = []
+    for boundary in slide.get("layout_boundaries", []):
+        if boundary.get("kind") != "non_editable_image_panel":
+            continue
+        bbox = boundary.get("bbox")
+        if bbox and len(bbox) == 4:
+            add_unique_box(boxes, normalized_to_pixels(bbox, width, height))
+    for layer in slide.get("source_layers", []):
+        bbox = layer.get("panel_bbox") or layer.get("bbox")
+        if bbox and len(bbox) == 4:
+            add_unique_box(boxes, normalized_to_pixels(bbox, width, height))
+
+    audit_path = project / "reports/source_layer_audit.json"
+    if audit_path.exists():
+        try:
+            audit = read_json(audit_path)
+        except SystemExit:
+            audit = {}
+        slide_no = int(slide.get("slide", 0))
+        for row in audit.get("layers", []):
+            if int(row.get("slide", -1)) != slide_no:
+                continue
+            bbox = row.get("visible_panel_bbox") or row.get("actual_panel_bbox") or row.get("panel_bbox")
+            if bbox and len(bbox) == 4:
+                add_unique_box(boxes, unit_xyxy_to_pixels(bbox, width, height))
+    return boxes
+
+
+def fill_boxes_mask(shape: Tuple[int, int], boxes: Sequence[Tuple[int, int, int, int]]) -> "np.ndarray":
+    height, width = shape
+    mask = np.zeros((height, width), dtype=bool)
+    for box in boxes:
+        x0, y0, x1, y1 = clamp_box(box, width, height)
+        mask[y0:y1, x0:x1] = True
+    return mask
+
+
+def boundary_masks(
+    background: "Image.Image",
+    rendered: "Image.Image",
+    source_panel_boxes: Sequence[Tuple[int, int, int, int]],
+    *,
+    blank_distance: float,
+    text_diff_threshold: float,
+    forbidden_dilate_px: int,
+    safe_margin_ratio: float,
+) -> Dict[str, Any]:
+    width, height = background.size
+    bg = np.asarray(background.convert("RGB")).astype(np.int16)
+    rd = np.asarray(rendered.convert("RGB")).astype(np.int16)
+    if rd.shape != bg.shape:
+        rendered = rendered.resize(background.size, Image.Resampling.BILINEAR)
+        rd = np.asarray(rendered.convert("RGB")).astype(np.int16)
+
+    main_color = dominant_blank_color_for_boundary(background)
+    color_arr = np.asarray(main_color, dtype=np.float32)
+    color_distance = np.sqrt(((bg.astype(np.float32) - color_arr) ** 2).sum(axis=2))
+    luminance = bg[:, :, 0] * 0.299 + bg[:, :, 1] * 0.587 + bg[:, :, 2] * 0.114
+    saturation = bg.max(axis=2) - bg.min(axis=2)
+
+    blank = (color_distance <= blank_distance) | ((luminance > 220) & (saturation < 90))
+    blank = close_mask(open_mask(blank, 1), 2)
+    safe = np.zeros((height, width), dtype=bool)
+    margin = int(round(min(width, height) * safe_margin_ratio))
+    safe[margin : height - margin, margin : width - margin] = True
+    source_panel = fill_boxes_mask((height, width), source_panel_boxes)
+    structural = (~blank) & ((saturation > 70) | (luminance < 230))
+    structural = open_mask(structural, 1)
+    forbidden = dilate_mask(structural, forbidden_dilate_px) | dilate_mask(source_panel, 6) | (~safe)
+    fill = blank & safe & (~forbidden)
+    diff = np.abs(rd - bg).mean(axis=2)
+    text = dilate_mask(diff > text_diff_threshold, 1) & (~dilate_mask(source_panel, 3))
+    return {
+        "main_blank_color": color_hex(main_color),
+        "blank": blank,
+        "safe": safe,
+        "source_panel": source_panel,
+        "structural": structural,
+        "forbidden": forbidden,
+        "fill": fill,
+        "text": text,
+    }
+
+
+def candidate_fill_rectangles(fill: "np.ndarray", forbidden: "np.ndarray", *, max_count: int = 6) -> List[Dict[str, Any]]:
+    height, width = fill.shape
+    cols = BOUNDARY_GRID_COLS
+    rows = BOUNDARY_GRID_ROWS
+    grid = np.zeros((rows, cols), dtype=bool)
+    for row in range(rows):
+        for col in range(cols):
+            x0 = int(round(col * width / cols))
+            x1 = int(round((col + 1) * width / cols))
+            y0 = int(round(row * height / rows))
+            y1 = int(round((row + 1) * height / rows))
+            fill_patch = fill[y0:y1, x0:x1]
+            forbidden_patch = forbidden[y0:y1, x0:x1]
+            if fill_patch.size and float(fill_patch.mean()) >= 0.70 and float(forbidden_patch.mean()) <= 0.04:
+                grid[row, col] = True
+    components = connected_components(grid, min_area=1)
+    rectangles = []
+    for comp in components:
+        if comp["area"] < 2:
+            continue
+        x0 = int(round(comp["x"] * width / cols))
+        x1 = int(round((comp["x"] + comp["w"]) * width / cols))
+        y0 = int(round(comp["y"] * height / rows))
+        y1 = int(round((comp["y"] + comp["h"]) * height / rows))
+        area = max(0, x1 - x0) * max(0, y1 - y0)
+        rectangles.append(
+            {
+                "bbox": [round(x0 / width, 5), round(y0 / height, 5), round((x1 - x0) / width, 5), round((y1 - y0) / height, 5)],
+                "cell_area": int(comp["area"]),
+                "pixel_area": int(area),
+            }
+        )
+    rectangles.sort(key=lambda item: (-int(item["pixel_area"]), item["bbox"][1], item["bbox"][0]))
+    return rectangles[:max_count]
+
+
+def boundary_clearance_summary(text: "np.ndarray", forbidden: "np.ndarray") -> Dict[str, Any]:
+    text_pixels = int(text.sum())
+    if text_pixels <= 0:
+        return {"text_pixels": 0, "p10_px": None, "within_12px_ratio": 0.0}
+    radii = [0, 4, 8, 12, 16, 24, 32, 48, 64]
+    ratios = []
+    p10 = None
+    for radius in radii:
+        expanded = forbidden if radius == 0 else dilate_mask(forbidden, radius)
+        ratio = float((text & expanded).sum() / max(1, text_pixels))
+        ratios.append({"radius_px": radius, "text_ratio": round(ratio, 5)})
+        if p10 is None and ratio >= 0.10:
+            p10 = radius
+    return {
+        "text_pixels": text_pixels,
+        "p10_px": p10,
+        "within_12px_ratio": next(item["text_ratio"] for item in ratios if item["radius_px"] == 12),
+        "radius_curve": ratios,
+    }
+
+
+def write_boundary_overlay(
+    background: "Image.Image",
+    masks: Dict[str, Any],
+    source_boxes: Sequence[Tuple[int, int, int, int]],
+    candidates: Sequence[Dict[str, Any]],
+    out_path: Path,
+) -> None:
+    base = np.asarray(background.convert("RGB")).astype(np.float32)
+    overlay = base.copy()
+    for mask, color, alpha in (
+        (masks["fill"], np.asarray([33, 166, 93], dtype=np.float32), 0.18),
+        (masks["forbidden"], np.asarray([236, 72, 72], dtype=np.float32), 0.22),
+        (masks["text"], np.asarray([6, 182, 212], dtype=np.float32), 0.58),
+    ):
+        overlay[mask] = overlay[mask] * (1.0 - alpha) + color * alpha
+    image = Image.fromarray(np.clip(overlay, 0, 255).astype("uint8"), mode="RGB")
+    draw = ImageDraw.Draw(image)
+    for box in source_boxes:
+        draw.rectangle(box, outline="#ef4444", width=5)
+    for candidate in candidates:
+        x, y, w, h = candidate["bbox"]
+        box = normalized_to_pixels([x, y, w, h], image.width, image.height)
+        draw.rectangle(box, outline="#facc15", width=4)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(out_path)
+
+
+def audit_content_boundaries(
+    project: Path,
+    rendered_dir: Path,
+    *,
+    out_dir: Optional[Path] = None,
+    write_overlays: bool = True,
+    blank_distance: float = DEFAULT_BOUNDARY_BLANK_DISTANCE,
+    text_diff_threshold: float = DEFAULT_BOUNDARY_TEXT_DIFF_THRESHOLD,
+    forbidden_dilate_px: int = DEFAULT_BOUNDARY_FORBIDDEN_DILATE_PX,
+    safe_margin_ratio: float = DEFAULT_BOUNDARY_SAFE_MARGIN_RATIO,
+    max_text_outside_fill: float = DEFAULT_BOUNDARY_MAX_TEXT_OUTSIDE_FILL,
+    max_text_forbidden_overlap: float = DEFAULT_BOUNDARY_MAX_TEXT_FORBIDDEN_OVERLAP,
+    min_clearance_p10_px: int = DEFAULT_BOUNDARY_MIN_CLEARANCE_P10_PX,
+) -> Dict[str, Any]:
+    require_image_libs()
+    spec = load_project(project)
+    plan = slide_plan(project)
+    out_dir = out_dir or project / "reports"
+    overlay_dir = out_dir / "content_boundary_overlays"
+    slides: List[Dict[str, Any]] = []
+    issues: List[Dict[str, Any]] = []
+    for slide in plan.get("slides", []):
+        slide_no = int(slide["slide"])
+        background_path = background_image_path(project, slide_no)
+        rendered_path = rendered_slide_path(rendered_dir, slide_no)
+        if not background_path.exists() or not rendered_path:
+            slides.append(
+                {
+                    "slide": slide_no,
+                    "status": "missing",
+                    "background": str(background_path),
+                    "rendered": str(rendered_path) if rendered_path else None,
+                }
+            )
+            issues.append(
+                {
+                    "slide": slide_no,
+                    "kind": "missing_render_or_background",
+                    "message": "content-boundary audit requires the text-free background and current rendered PPTX page",
+                }
+            )
+            continue
+        background = Image.open(background_path).convert("RGB")
+        rendered = Image.open(rendered_path).convert("RGB")
+        if rendered.size != background.size:
+            rendered = rendered.resize(background.size, Image.Resampling.BILINEAR)
+        source_boxes = source_panel_boxes_for_boundary(project, slide, background.width, background.height)
+        masks = boundary_masks(
+            background,
+            rendered,
+            source_boxes,
+            blank_distance=blank_distance,
+            text_diff_threshold=text_diff_threshold,
+            forbidden_dilate_px=forbidden_dilate_px,
+            safe_margin_ratio=safe_margin_ratio,
+        )
+        text = masks["text"]
+        text_pixels = int(text.sum())
+        outside_fill_ratio = float((text & (~masks["fill"])).sum() / max(1, text_pixels)) if text_pixels else 0.0
+        forbidden_overlap_ratio = float((text & masks["forbidden"]).sum() / max(1, text_pixels)) if text_pixels else 0.0
+        fill_ratio = float(masks["fill"].mean())
+        forbidden_ratio = float(masks["forbidden"].mean())
+        source_ratio = float(masks["source_panel"].mean())
+        clearance = boundary_clearance_summary(text, masks["forbidden"])
+        candidates = candidate_fill_rectangles(masks["fill"], masks["forbidden"])
+        slide_issues = []
+        if outside_fill_ratio > max_text_outside_fill:
+            slide_issues.append("text_outside_fill_zone")
+        if forbidden_overlap_ratio > max_text_forbidden_overlap:
+            slide_issues.append("text_overlaps_forbidden_zone")
+        p10 = clearance.get("p10_px")
+        if text_pixels and p10 is not None and int(p10) < min_clearance_p10_px and forbidden_overlap_ratio > 0.01:
+            slide_issues.append("text_too_close_to_forbidden_zone")
+        if text_pixels and not candidates:
+            slide_issues.append("no_candidate_text_fill_zone")
+        for kind in slide_issues:
+            issues.append(
+                {
+                    "slide": slide_no,
+                    "kind": kind,
+                    "message": "editable text should stay inside main blank-color fill zones and outside source panels/illustrations",
+                }
+            )
+        overlay_path = overlay_dir / f"slide_{slide_no:02d}_boundary_overlay.png"
+        if write_overlays:
+            write_boundary_overlay(background, masks, source_boxes, candidates, overlay_path)
+        slides.append(
+            {
+                "slide": slide_no,
+                "status": "warn" if slide_issues else "ok",
+                "main_blank_color": masks["main_blank_color"],
+                "text_pixels": text_pixels,
+                "text_outside_fill_zone_ratio": round(outside_fill_ratio, 5),
+                "text_forbidden_overlap_ratio": round(forbidden_overlap_ratio, 5),
+                "fill_zone_area_ratio": round(fill_ratio, 5),
+                "forbidden_zone_area_ratio": round(forbidden_ratio, 5),
+                "source_panel_area_ratio": round(source_ratio, 5),
+                "text_clearance_to_forbidden_px": clearance,
+                "source_panel_boxes": [list(pixels_to_unit_rect(box, background.width, background.height)) for box in source_boxes],
+                "candidate_text_fill_rectangles": candidates,
+                "overlay": project_relative(project, overlay_path) if write_overlays else None,
+                "issues": slide_issues,
+            }
+        )
+    text_slide_count = sum(1 for slide in slides if int(slide.get("text_pixels", 0)) > 0)
+    mean_outside = sum(float(slide.get("text_outside_fill_zone_ratio", 0.0)) for slide in slides) / max(1, text_slide_count)
+    mean_forbidden = sum(float(slide.get("text_forbidden_overlap_ratio", 0.0)) for slide in slides) / max(1, text_slide_count)
+    return {
+        "created_at": now_iso(),
+        "rendered_dir": str(rendered_dir),
+        "definition": {
+            "blank_zone": "pixels close to the dominant/main blank color and inside the safe slide margin",
+            "forbidden_zone": "source panels, illustration/structural regions, slide margins, and their dilated neighborhoods",
+            "text_fill_zone": "blank_zone minus forbidden_zone; editable PowerPoint text should live here",
+            "asset_internal_text_policy": "text printed inside a source image or illustration is preserved as image content and excluded from editable-text placement diagnostics",
+        },
+        "thresholds": {
+            "blank_distance": blank_distance,
+            "text_diff_threshold": text_diff_threshold,
+            "forbidden_dilate_px": forbidden_dilate_px,
+            "safe_margin_ratio": safe_margin_ratio,
+            "max_text_outside_fill": max_text_outside_fill,
+            "max_text_forbidden_overlap": max_text_forbidden_overlap,
+            "min_clearance_p10_px": min_clearance_p10_px,
+        },
+        "issue_count": len(issues),
+        "issues": issues,
+        "aggregate": {
+            "text_slide_count": text_slide_count,
+            "mean_text_outside_fill_zone_ratio": round(mean_outside, 5),
+            "mean_text_forbidden_overlap_ratio": round(mean_forbidden, 5),
+            "warning_slides": [slide["slide"] for slide in slides if slide.get("status") == "warn"],
+        },
+        "slides": slides,
+    }
+
+
+def write_content_boundary_audit(out_dir: Path, report: Dict[str, Any]) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    write_json(out_dir / "content_boundary_audit.json", report)
+    lines = [
+        "# Content Boundary Audit",
+        "",
+        f"- Issues: {report['issue_count']}",
+        f"- Mean text outside fill zone: {report['aggregate']['mean_text_outside_fill_zone_ratio']}",
+        f"- Mean text forbidden overlap: {report['aggregate']['mean_text_forbidden_overlap_ratio']}",
+        f"- Warning slides: {report['aggregate']['warning_slides']}",
+        "",
+        "## Definitions",
+        "",
+        "- `blank_zone`: main blank-color region detected from each text-free background.",
+        "- `forbidden_zone`: source panels, structural illustration regions, slide margins, and dilated nearby pixels.",
+        "- `text_fill_zone`: editable text target, defined as `blank_zone - forbidden_zone`.",
+        "- Source-panel internal labels are image content and are excluded from editable-text diagnostics.",
+        "",
+        "| Slide | Status | Main blank | Outside fill | Forbidden overlap | Source panel area | Overlay |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for slide in report["slides"]:
+        overlay = slide.get("overlay") or ""
+        lines.append(
+            f"| {slide['slide']} | {slide.get('status')} | {slide.get('main_blank_color', '')} | "
+            f"{slide.get('text_outside_fill_zone_ratio', '')} | {slide.get('text_forbidden_overlap_ratio', '')} | "
+            f"{slide.get('source_panel_area_ratio', '')} | `{overlay}` |"
+        )
+    lines.extend(["", "## Issues", "", "| Slide | Kind | Message |", "| --- | --- | --- |"])
+    for issue in report["issues"]:
+        lines.append(f"| {issue['slide']} | {issue['kind']} | {issue['message']} |")
+    (out_dir / "content_boundary_audit.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def cmd_audit_boundaries(args: argparse.Namespace) -> None:
+    project = Path(args.project).resolve()
+    rendered_dir = Path(args.rendered_dir).resolve() if args.rendered_dir else project / "reports/rendered"
+    out_dir = Path(args.out_dir).resolve() if args.out_dir else project / "reports"
+    report = audit_content_boundaries(
+        project,
+        rendered_dir,
+        out_dir=out_dir,
+        write_overlays=not args.no_overlays,
+        blank_distance=args.blank_distance,
+        text_diff_threshold=args.text_diff_threshold,
+        forbidden_dilate_px=args.forbidden_dilate_px,
+        safe_margin_ratio=args.safe_margin_ratio,
+        max_text_outside_fill=args.max_text_outside_fill,
+        max_text_forbidden_overlap=args.max_text_forbidden_overlap,
+        min_clearance_p10_px=args.min_clearance_p10_px,
+    )
+    write_content_boundary_audit(out_dir, report)
+    print(f"Wrote {out_dir / 'content_boundary_audit.json'}")
+    print(f"Wrote {out_dir / 'content_boundary_audit.md'}")
+    if not args.no_overlays:
+        print(f"Wrote overlays under {out_dir / 'content_boundary_overlays'}")
+    if args.strict and report["issue_count"]:
+        die(f"content boundary audit found {report['issue_count']} issue(s)")
 
 
 def unit_rect(values: Sequence[float]) -> Tuple[float, float, float, float]:
@@ -2473,6 +3490,15 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
                         "message": "generated source panels must use detected panel edges; `detect_panel: false` bypasses the four-edge fitting algorithm",
                     }
                 )
+            if panel_reference is not None and not draw_frame and panel_detection_enabled(layer) and detected_panel is None:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": idx,
+                        "kind": "panel_detection_missing",
+                        "message": "source layer uses a generated panel, but no source-free panel edge was detected; declared bbox is only a search hint",
+                    }
+                )
             if not rect_inside(paste_rect, actual_panel_rect, tolerance=0.002):
                 issues.append({"slide": slide_no, "layer": idx, "kind": "outside_actual_panel", "message": "source image paste area is not fully inside the detected or declared panel"})
             if not rect_inside(paste_rect, panel_rect, tolerance=0.002):
@@ -2513,7 +3539,8 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
                         "kind": "panel_aspect_mismatch",
                         "message": (
                             "visible/native panel inset ratio does not match trimmed source ratio "
-                            f"({visible_fit_ratio:.3f}:1 vs {source_ratio:.3f}:1)"
+                            f"({visible_fit_ratio:.3f}:1 vs {source_ratio:.3f}:1); "
+                            "regenerate the GPT-image-2 source-free panel or update the plan before source-locking"
                         ),
                     }
                 )
@@ -2681,8 +3708,14 @@ def cmd_qa(args: argparse.Namespace) -> None:
     write_json(project / "reports/qa_similarity.json", report)
     layout_report = audit_source_layers(project)
     write_source_layer_audit(project, layout_report)
+    text_report = audit_text_alignment(project, rendered_dir)
+    write_text_alignment_audit(project, text_report)
+    source_render_report = audit_source_render_alignment(project, rendered_dir)
+    write_source_render_audit(project, source_render_report)
     background_report = audit_background_uniqueness(project, spec)
     write_background_audit(project, background_report)
+    boundary_report = audit_content_boundaries(project, rendered_dir, out_dir=project / "reports")
+    write_content_boundary_audit(project / "reports", boundary_report)
     failing = [
         r for r in rows
         if r.get("status") != "ok" or float(r.get("pixel_similarity", 0.0)) < args.min_similarity
@@ -2695,7 +3728,10 @@ def cmd_qa(args: argparse.Namespace) -> None:
         f"- Slides checked: {len(rows)}",
         f"- Failing or missing slides: {len(failing)}",
         f"- Source layer layout issues: {layout_report['issue_count']}",
+        f"- Text alignment issues: {text_report['issue_count']}",
+        f"- Source render issues: {source_render_report['issue_count']}",
         f"- Background issues: {background_report['issue_count']}",
+        f"- Content boundary issues: {boundary_report['issue_count']}",
         "",
         f"- Max bad-pixel ratio (>32): {args.max_bad_pixel_ratio}",
         f"- Max detail patch p90 MAE: {args.max_patch_p90_mae}",
@@ -2715,14 +3751,27 @@ def cmd_qa(args: argparse.Namespace) -> None:
     print(f"Wrote {project / 'reports/qa_report.md'}")
     print(f"Wrote {project / 'reports/source_layer_audit.json'}")
     print(f"Wrote {project / 'reports/source_layer_audit.md'}")
+    print(f"Wrote {project / 'reports/text_alignment_audit.json'}")
+    print(f"Wrote {project / 'reports/text_alignment_audit.md'}")
+    print(f"Wrote {project / 'reports/source_render_audit.json'}")
+    print(f"Wrote {project / 'reports/source_render_audit.md'}")
     print(f"Wrote {project / 'reports/background_audit.json'}")
     print(f"Wrote {project / 'reports/background_audit.md'}")
+    print(f"Wrote {project / 'reports/content_boundary_audit.json'}")
+    print(f"Wrote {project / 'reports/content_boundary_audit.md'}")
+    print(f"Wrote overlays under {project / 'reports/content_boundary_overlays'}")
     if args.strict and failing:
         die(f"{len(failing)} slide(s) failed similarity threshold")
     if args.strict and layout_report["issue_count"]:
         die(f"source layer layout audit found {layout_report['issue_count']} issue(s)")
+    if args.strict and text_report["issue_count"]:
+        die(f"text alignment audit found {text_report['issue_count']} issue(s)")
+    if args.strict and source_render_report["issue_count"]:
+        die(f"source render alignment audit found {source_render_report['issue_count']} issue(s)")
     if args.strict and background_report["issue_count"]:
         die(f"background audit found {background_report['issue_count']} issue(s)")
+    if args.boundary_strict and boundary_report["issue_count"]:
+        die(f"content boundary audit found {boundary_report['issue_count']} issue(s)")
 
 
 def cmd_doctor(args: argparse.Namespace) -> None:
@@ -2777,6 +3826,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--project", required=True)
     p.add_argument("--strict", action="store_true")
     p.set_defaults(func=cmd_audit_layout)
+
+    p = sub.add_parser("audit-boundaries", help="Audit blank-zone, forbidden-zone, and editable text placement boundaries")
+    p.add_argument("--project", required=True)
+    p.add_argument("--rendered-dir")
+    p.add_argument("--out-dir")
+    p.add_argument("--blank-distance", type=float, default=DEFAULT_BOUNDARY_BLANK_DISTANCE)
+    p.add_argument("--text-diff-threshold", type=float, default=DEFAULT_BOUNDARY_TEXT_DIFF_THRESHOLD)
+    p.add_argument("--forbidden-dilate-px", type=int, default=DEFAULT_BOUNDARY_FORBIDDEN_DILATE_PX)
+    p.add_argument("--safe-margin-ratio", type=float, default=DEFAULT_BOUNDARY_SAFE_MARGIN_RATIO)
+    p.add_argument("--max-text-outside-fill", type=float, default=DEFAULT_BOUNDARY_MAX_TEXT_OUTSIDE_FILL)
+    p.add_argument("--max-text-forbidden-overlap", type=float, default=DEFAULT_BOUNDARY_MAX_TEXT_FORBIDDEN_OVERLAP)
+    p.add_argument("--min-clearance-p10-px", type=int, default=DEFAULT_BOUNDARY_MIN_CLEARANCE_P10_PX)
+    p.add_argument("--no-overlays", action="store_true")
+    p.add_argument("--strict", action="store_true")
+    p.set_defaults(func=cmd_audit_boundaries)
 
     p = sub.add_parser("imagegen", help="Run or preview GPT-image-2 imagegen calls")
     p.add_argument("--project", required=True)
@@ -2833,6 +3897,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-patch-p90-mae", type=float, default=56.0)
     p.add_argument("--max-bad-patch-ratio", type=float, default=0.36)
     p.add_argument("--strict", action="store_true")
+    p.add_argument("--boundary-strict", action="store_true", help="Also fail when blank-zone/content-boundary diagnostics warn")
     p.set_defaults(func=cmd_qa)
 
     p = sub.add_parser("doctor", help="Check local tool availability")

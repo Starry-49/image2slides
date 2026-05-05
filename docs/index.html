@@ -56,7 +56,7 @@
       <article>
         <span class="metric">GPT-image-2</span>
         <h2>Native image bases</h2>
-        <p>Codex native image generation produces text-free visual bases; source-locked figures are inserted later without redrawing results.</p>
+        <p>Codex native image generation produces completed references and text-free backgrounds; source-locked figures are inserted later without redrawing results.</p>
       </article>
       <article>
         <span class="metric">PPTX + PDF</span>
@@ -76,8 +76,9 @@
         <div><b>1</b><span>Require tone, aspect ratio, slide count, purpose, scene, and knowledge base.</span></div>
         <div><b>2</b><span>Write the wiki structure, source registry, and grep/generate boundary before prompt work.</span></div>
         <div><b>3</b><span>Use GPT-image-2 for visual bases and reserve panels that match source-image proportions.</span></div>
-        <div><b>4</b><span>Compose exact source figures, detect native panel edges, and produce completed/background pairs.</span></div>
-        <div><b>5</b><span>Build editable PPTX, run strict QA, then export the accepted PowerPoint to PDF.</span></div>
+        <div><b>4</b><span>Compose exact source figures, detect native panel edges, and mark source panels as non-editable boundaries.</span></div>
+        <div><b>5</b><span>Audit blank zones, forbidden source/illustration zones, and editable text-fill regions with overlays.</span></div>
+        <div><b>6</b><span>Build editable PPTX, run strict QA, then export the accepted PowerPoint to PDF.</span></div>
       </div>
     </section>
 
@@ -105,6 +106,7 @@ image2slides compose-source-locked \
   --base-dir tmp/native_imagegen
 
 image2slides audit-layout --project decks/my-deck --strict
+image2slides audit-boundaries --project decks/my-deck
 image2slides analyze --project decks/my-deck
 image2slides build-pptx --project decks/my-deck
 image2slides qa --project decks/my-deck --strict</code></pre>
@@ -132,7 +134,7 @@ image2slides qa --project decks/my-deck --strict</code></pre>
         </article>
         <article>
           <h3>Slide plan</h3>
-          <p><code>wiki/04_slide_plan.json</code> defines titles, editable text, speaker notes, source layers, panel boxes, and margins.</p>
+          <p><code>wiki/04_slide_plan.json</code> defines titles, editable text, speaker notes, source layers, panel boxes, margins, and non-editable source-panel boundaries.</p>
         </article>
       </div>
     </section>
@@ -150,6 +152,7 @@ image2slides qa --project decks/my-deck --strict</code></pre>
             <li>Source chart images remain exact.</li>
             <li>Data/results are not redrawn by GPT-image-2.</li>
             <li>Claims point back to the source registry.</li>
+            <li>Source panels are forbidden zones for editable text.</li>
           </ul>
         </article>
         <article>

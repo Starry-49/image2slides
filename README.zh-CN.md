@@ -19,6 +19,37 @@ npm install -g git+https://github.com/Starry-49/image2slides.git
 image2slides doctor
 ```
 
+Codex local plugin 部署有两种方式：
+
+1. 自主安装：
+
+   ```bash
+   git clone https://github.com/Starry-49/image2slides.git
+   cd image2slides
+   npm install -g .
+   npm pack
+   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides
+   rm -rf ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
+   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
+   tar -xzf image2slides-1.0.0.tgz \
+     -C ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0 \
+     --strip-components=1
+   rm image2slides-1.0.0.tgz
+   image2slides doctor
+   ```
+
+   然后重启或刷新 Codex，让本地 plugin cache 重新索引。plugin manifest 是 `.codex-plugin/plugin.json`，slash-command skill 是 `skills/image2slides/SKILL.md`。
+
+2. 指引 Codex 安装：
+
+   ```text
+   请从 /path/to/image2slides 安装或刷新本地 Codex plugin。
+   使用 .codex-plugin/plugin.json 作为 manifest，启用 Image2Slides plugin，
+   然后运行 `image2slides doctor` 并确认 `/image2slides` 可用。
+   ```
+
+   如果 Codex App 要求选择路径，选择仓库根目录，不要选择 `skills/` 子目录。
+
 本地开发：
 
 ```bash
@@ -103,7 +134,8 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 
    输出到 `background/slide_XX_background.png` 和 `background/.image2slides_background_provenance.json`。background prompt 会要求只移除文字，保留布局、图形、颜色和几何位置。`analyze`、`build-pptx`、`compose-source-locked` 和 `qa` 会拒绝未注册的本地模板、截图、确定性绘图、过期 background，或没有绑定当前 completed provenance 的 background 批次。
    layout audit 会固定检查 source 图是否在检测到的 native panel 内、panel 内缩比例是否匹配 trim 后 source 图比例、source panel/image 之间是否互相重叠、是否遮挡可编辑文字、figure-first 页面中图是否压过文字成为视觉主角，以及是否在 native imagegen panel 上重复添加圆角框。
-   source fitting 会先裁掉 blank 像素，并在 GPT-image-2 prompt 中要求 panel 比例反向匹配 source 图片；compose 时会识别生成底版或 background 中的真实 panel 边界，再按 `fit_margin_px` 内缩，在四条平行边约束下最大化缩放并最小化剩余 slack，最后让图片中心和内缩 panel 中心对齐。
+   source fitting 会先裁掉 blank 像素，并在 GPT-image-2 prompt 中要求 panel 比例反向匹配 source 图片；compose 时会识别生成底版或 background 中的真实 panel 边界，再按 `fit_margin_px` 内缩，在四条平行边约束下最大化缩放并最小化剩余 slack，最后让图片中心和内缩 panel 中心对齐。生成式/native panel 的内缩边距最小为 32 px，即便某个 layer 设置得更小也不能突破；source 图边缘连通的近白 blank 默认透明贴入，避免图表自带白底矩形压住生成 panel。计划里的 `bbox` 只允许作为 panel detector 的搜索提示；如果它指向错误插图位置，Image2Slides 也必须使用真实生成 panel，或让 strict QA 失败。如果真实生成 panel 比例与 trim 后 source 比例不一致，必须重生 GPT-image-2 panel，不能本地拉伸、裁切或假装通过。
+   `queue` 还会把每个 source panel 写入 `wiki/04_slide_plan.json` 的 `non_editable_image_panel` layout boundary。可编辑 PowerPoint 文字不能进入这些区域。source 图、图表、示意图、icon 内部原本就存在的文字属于图片资产内容，默认保留，不纳入可编辑文字排版诊断，除非用户明确要求抽取。
 
    Figure-first 标准：
    - 只有数值、坐标轴、统计关系必须保持不变的 result/data figure 才作为精确 source panel 保留
@@ -129,6 +161,7 @@ python3 skills/image2slides/scripts/image2slides.py doctor
    - `analysis/manifest.json`
 
    分析器对比 `completed/` 和 `background/`，把像素差视为文字 mask，识别主背景色、文字区域和低变化 blank 区域。
+   在把这个 mask 当作文字校正目标之前，需要先确认 completed/background 之间的差异主要是文字。如果 panel、figure、illustration 或其他非文字几何也发生漂移，应重新生成 GPT-image-2 background edit，而不是围绕污染后的 mask 调 PPT 文字。
 
 7. 生成可编辑 PPTX：
 
@@ -152,9 +185,14 @@ python3 skills/image2slides/scripts/image2slides.py doctor
    - `reports/qa_similarity.json`
    - `reports/qa_report.md`
    - `reports/source_layer_audit.md`
+   - `reports/text_alignment_audit.md`
+   - `reports/source_render_audit.md`
    - `reports/background_audit.md`
+   - `reports/content_boundary_audit.md`
+   - `reports/content_boundary_overlays/`
 
-   QA 会在本地有 LibreOffice 和 `pdftoppm` 时重新渲染 PPTX，再与 `completed/` 做像素和 patch 相似度比较，并再次执行固定的 source-layer layout audit；strict 模式也会拒绝 byte-identical 或视觉近重复的 background 页面。默认 strict 相似度预设要求整体 pixel similarity >= 0.90，同时允许 GPT-image-2 参考文字与可编辑 PowerPoint 文字之间正常的字体栅格化差异。每次 render 前会清理旧截图，避免 stale render 造成假阳性。
+   QA 会在本地有 LibreOffice 和 `pdftoppm` 时重新渲染 PPTX，再与 `completed/` 做像素和 patch 相似度比较，并再次执行固定的 source-layer layout audit；同时逐个检查 rendered source crop 是否匹配最终 source-locked background crop，确认 source 透明 blank 区域仍与 source-free native panel 一致，并检查可编辑文字是否在局部上对齐 `completed` 参考图；strict 模式也会拒绝 byte-identical 或视觉近重复的 background 页面。默认 strict 相似度预设要求整体 pixel similarity >= 0.90，同时允许 GPT-image-2 参考文字与可编辑 PowerPoint 文字之间正常的字体栅格化差异。每次 render 前会清理旧截图，避免 stale render 造成假阳性。
+   content-boundary audit 是强化布局置信度的诊断项：它识别 main blank color，定义 `blank_zone`、`forbidden_zone`、`text_fill_zone`，把 source panel 当作不可写文字区域，排除图片内部自带标签，并写出 overlay 给 Codex/LLM review。需要单独运行时用 `image2slides audit-boundaries --project decks/my-deck --rendered-dir reports/rendered`。只有当希望这些 warning 直接让 QA 失败时，才给 `qa` 加 `--boundary-strict`。
 
 如果任何阶段脱离这个顺序，必须从第一个失效阶段开始清掉所有下游产物并回到最后可信 checkpoint。例如 `completed/` 失效就重做 completed、background、analysis、PPTX 和 QA；`background/` 失效就重做 background、analysis、PPTX 和 QA。
 

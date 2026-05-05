@@ -249,6 +249,10 @@ class Image2SlidesTests(unittest.TestCase):
             self.assertEqual(background.getpixel((1126, 231)), (238, 246, 255))
             audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
             layer = audit["layers"][0]
+            paste = layer["paste_bbox"]
+            blank_x = int(round(paste[0] * 2048)) + 3
+            blank_y = int(round(paste[1] * 1152)) + 3
+            self.assertEqual(background.getpixel((blank_x, blank_y)), (238, 246, 255))
             self.assertLessEqual(max(abs(v) for v in layer["center_delta_px"]), 1.0)
             self.assertLess(layer["source_size_px"][0], 160)
             self.assertLess(layer["source_size_px"][1], 120)
@@ -318,6 +322,48 @@ class Image2SlidesTests(unittest.TestCase):
             self.assertLess(layer["slack_px"][0], 3)
             self.assertLess(layer["slack_px"][1], 3)
 
+    def test_panel_detection_ignores_wrong_declared_hint(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            source = project / "wiki/sources/source.png"
+            Image.new("RGB", (400, 200), "#2f80ed").save(source)
+            base = Image.new("RGB", (2048, 1152), "#fbfcfe")
+            draw_base = ImageDraw.Draw(base)
+            actual_panel = (1050, 180, 1900, 560)
+            draw_base.rounded_rectangle(actual_panel, radius=24, fill="#ffffff", outline="#cddceb", width=3)
+            layer = {
+                "path": "wiki/sources/source.png",
+                "bbox": [800 / 2048, 180 / 1152, 800 / 2048, 380 / 1152],
+                "panel_bbox": [800 / 2048, 180 / 1152, 800 / 2048, 380 / 1152],
+                "fit_margin_px": 32,
+                "draw_frame": False,
+            }
+
+            geometry = image2slides.source_fit_geometry(
+                project,
+                layer,
+                (2048, 1152),
+                draw_frame=False,
+                panel_image=base,
+            )
+
+            detected = geometry["detected_panel_box"]
+            self.assertIsNotNone(detected)
+            self.assertGreater(detected[0], 1000)
+            self.assertGreater(detected[2], 1850)
+            self.assertLess(abs(detected[0] - actual_panel[0]), 12)
+            self.assertTrue(
+                image2slides.rect_inside(
+                    image2slides.pixels_to_unit_rect(geometry["paste_box"], 2048, 1152),
+                    image2slides.pixels_to_unit_rect(detected, 2048, 1152),
+                    tolerance=0.002,
+                )
+            )
+
     def test_normalize_source_panels_blocks_mismatched_panel_aspect(self) -> None:
         with tempfile_dir() as tmp:
             spec = tmp / "spec.json"
@@ -353,9 +399,84 @@ class Image2SlidesTests(unittest.TestCase):
             self.assertIn("panel_aspect_mismatch", {issue["kind"] for issue in audit["issues"]})
 
             run_cli(["normalize-source-panels", "--project", str(project)])
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            panel = image2slides.normalized_to_pixels(plan["slides"][0]["source_layers"][0]["panel_bbox"], 2048, 1152)
+            base = Image.new("RGB", (2048, 1152), "#fbfcfe")
+            draw_base = ImageDraw.Draw(base)
+            draw_base.rounded_rectangle(panel, radius=24, fill="#ffffff", outline="#cddceb", width=3)
+            base.save(project / "completed/slide_01_completed.png")
+            base.save(project / "background/slide_01_background.png")
             run_cli(["audit-layout", "--project", str(project), "--strict"])
             audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
             self.assertEqual(audit["issue_count"], 0)
+
+    def test_source_panels_become_non_editable_content_boundaries(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            source = project / "wiki/sources/result.png"
+            Image.new("RGB", (320, 180), "#ffffff").save(source)
+            plan_path = project / "wiki/04_slide_plan.json"
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["slides"][0].update(
+                {
+                    "figure_first": False,
+                    "source_layers": [
+                        {
+                            "path": "wiki/sources/result.png",
+                            "bbox": [0.56, 0.20, 0.34, 0.46],
+                            "panel_bbox": [0.56, 0.20, 0.34, 0.46],
+                            "draw_frame": False,
+                            "panel_aspect_from_source": False,
+                        }
+                    ],
+                    "text_items": [
+                        {"role": "title", "text": "Editable title", "bbox": [0.08, 0.20, 0.34, 0.12]},
+                    ],
+                }
+            )
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+            run_cli(["queue", "--project", str(project)])
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            boundaries = plan["slides"][0]["layout_boundaries"]
+            self.assertEqual(boundaries[0]["kind"], "non_editable_image_panel")
+            self.assertFalse(boundaries[0]["editable_text_allowed"])
+            self.assertIn("preserve_internal_text_as_image_content", plan["slides"][0]["illustration_text_policy"])
+
+            background = Image.new("RGB", (640, 360), "#ffffff")
+            draw_background = ImageDraw.Draw(background)
+            panel = (358, 72, 576, 238)
+            draw_background.rounded_rectangle(panel, radius=12, outline="#cddceb", width=3, fill="#ffffff")
+            background.save(project / "background/slide_01_background.png")
+
+            rendered = background.copy()
+            draw_rendered = ImageDraw.Draw(rendered)
+            draw_rendered.text((56, 84), "Editable title", fill="#102033")
+            draw_rendered.text((420, 132), "asset label", fill="#102033")
+            rendered_dir = project / "reports/rendered"
+            rendered_dir.mkdir(parents=True)
+            rendered.save(rendered_dir / "slide-1.png")
+
+            run_cli(
+                [
+                    "audit-boundaries",
+                    "--project",
+                    str(project),
+                    "--rendered-dir",
+                    str(rendered_dir),
+                    "--strict",
+                ]
+            )
+            audit = json.loads((project / "reports/content_boundary_audit.json").read_text(encoding="utf-8"))
+            slide = audit["slides"][0]
+            self.assertEqual(audit["issue_count"], 0)
+            self.assertGreater(slide["source_panel_area_ratio"], 0.10)
+            self.assertLess(slide["text_forbidden_overlap_ratio"], 0.02)
+            self.assertTrue((project / "reports/content_boundary_overlays/slide_01_boundary_overlay.png").exists())
 
     def test_layout_audit_blocks_source_overlap(self) -> None:
         with tempfile_dir() as tmp:

@@ -12,3 +12,10 @@ build/
 tmp/
 output/
 *.log
+*.pd1-title-backup
+**/newslides*.pptx
+**/image2slides_auto_before_manual_postcorrect_*.pptx
+**/reports/blank_zone_boundary/
+**/reports/deep_layout_diagnostics/
+**/reports/final_manual_postcorrect/
+**/reports/post_correction/

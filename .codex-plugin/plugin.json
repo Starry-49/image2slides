@@ -1,11 +1,11 @@
 {
   "name": "image2slides",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Generate editable PowerPoint decks from image-generated slide compositions and text-free backgrounds.",
   "author": {
     "name": "starry"
   },
-  "homepage": "https://github.com/Starry-49/image2slides",
+  "homepage": "https://starry-49.github.io/image2slides/",
   "repository": "https://github.com/Starry-49/image2slides",
   "license": "MIT",
   "keywords": [
@@ -27,7 +27,7 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/Starry-49/image2slides",
+    "websiteURL": "https://starry-49.github.io/image2slides/",
     "privacyPolicyURL": "https://github.com/Starry-49/image2slides",
     "termsOfServiceURL": "https://github.com/Starry-49/image2slides",
     "defaultPrompt": [

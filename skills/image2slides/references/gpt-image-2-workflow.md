@@ -12,7 +12,9 @@ Use `generate-batch` with one JSONL job per slide. Each job should include:
 - `quality`: `high` for final slide references
 - `model`: `gpt-image-2`
 
-For source-locked figures, the prompt must reserve blank panels whose inner proportions match the source image aspect ratio. The figure itself is pasted later from `wiki/sources/`; GPT-image-2 should design the surrounding composition and panel shell, not redraw or mutate data/results.
+For source-locked figures, the prompt must reserve blank panels whose inner proportions match the source image aspect ratio. The figure itself is pasted later from `wiki/sources/`; GPT-image-2 should design the surrounding composition and panel shell, not redraw or mutate data/results. The planned `bbox` is only a search hint for the later detector. The actual panel must be found from the source-free GPT-image background; if the generated panel ratio or location differs, strict QA must flag it instead of silently pasting into the hint box.
+
+During `queue`, every planned source panel is also written into `wiki/04_slide_plan.json` as a `layout_boundaries` entry with `kind: non_editable_image_panel`. That boundary is part of the generation contract: editable PowerPoint text must not be planned inside it. Labels that already live inside a chart, diagram, schematic, or icon are asset-internal text and should stay embedded in the image asset unless the user explicitly asks to extract them.
 
 ## Background Slides
 
@@ -24,4 +26,6 @@ GPT-image-2 does not support transparent output. This workflow does not need tra
 
 The completed image and background image must differ only in text pixels. If non-text graphics shift, reject the background and rerun the edit with a stricter preservation prompt.
 
-When `tmp/native_imagegen/slide_XX_base.png` is present, `compose-source-locked` detects the actual generated panel edges before placing source figures. QA then checks the detected panel, the source-aspect panel, the inset fit box, and the final paste box.
+When `tmp/native_imagegen/slide_XX_base.png` is present, `compose-source-locked` detects the actual generated panel edges before placing source figures. It must not clear or repaint the declared hint region, because a wrong hint can become a false panel if it is erased. QA then checks the detected panel, the source-aspect panel, the inset fit box, the final paste box, the rendered source crop, and local editable-text alignment against the completed reference.
+
+Full-slide pixel similarity is only a smoke test. It can miss bad text placement when large blank regions dominate the page. Use `audit-boundaries` or `qa` output to inspect main-color blank zones, forbidden source/illustration zones, candidate text-fill rectangles, and overlay PNGs. Codex native LLM review should judge the overlays: accept when editable text lives in blank fill zones and source panels remain visual-only regions; regenerate or adjust when text overlaps source panels, panel borders, or nearby illustrations.
