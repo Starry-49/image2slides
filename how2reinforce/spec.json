@@ -1,0 +1,10 @@
+{
+  "style_tone": "white academic defense style with restrained blue/green biomedical accents; clean Apple-like minimal layout",
+  "aspect_ratio": "16:9",
+  "slide_count": 15,
+  "purpose": "speech",
+  "scene": "academic undergraduate thesis defense",
+  "knowledge_base": [
+    "how2reinforce/raw.pdf"
+  ]
+}

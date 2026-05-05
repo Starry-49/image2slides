@@ -1,0 +1,672 @@
+{
+  "completed": "/Users/starry/Desktop/codex/image2slides/how2reinforce/image2slides_run/completed/slide_07_completed.png",
+  "background": "/Users/starry/Desktop/codex/image2slides/how2reinforce/image2slides_run/background/slide_07_background.png",
+  "width": 2048,
+  "height": 1152,
+  "dominant_background_color": "#fefefe",
+  "diff_threshold": 18,
+  "text_regions": [
+    {
+      "bbox": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "area": 21353,
+      "dominant_text_color": "#d2d6e6"
+    },
+    {
+      "bbox": [
+        0.25469,
+        0.05833,
+        0.02969,
+        0.06111
+      ],
+      "area": 769,
+      "dominant_text_color": "#121943"
+    },
+    {
+      "bbox": [
+        0.2875,
+        0.05833,
+        0.03438,
+        0.06111
+      ],
+      "area": 1353,
+      "dominant_text_color": "#1d2346"
+    },
+    {
+      "bbox": [
+        0.32344,
+        0.05833,
+        0.03281,
+        0.06111
+      ],
+      "area": 1090,
+      "dominant_text_color": "#131940"
+    },
+    {
+      "bbox": [
+        0.49922,
+        0.05833,
+        0.03203,
+        0.05972
+      ],
+      "area": 1259,
+      "dominant_text_color": "#131940"
+    },
+    {
+      "bbox": [
+        0.04141,
+        0.05972,
+        0.03359,
+        0.04306
+      ],
+      "area": 720,
+      "dominant_text_color": "#191d41"
+    },
+    {
+      "bbox": [
+        0.18203,
+        0.05972,
+        0.03438,
+        0.05972
+      ],
+      "area": 1133,
+      "dominant_text_color": "#171e43"
+    },
+    {
+      "bbox": [
+        0.21875,
+        0.05972,
+        0.03281,
+        0.05972
+      ],
+      "area": 1201,
+      "dominant_text_color": "#181e42"
+    },
+    {
+      "bbox": [
+        0.4375,
+        0.05972,
+        0.025,
+        0.05972
+      ],
+      "area": 611,
+      "dominant_text_color": "#0f153d"
+    },
+    {
+      "bbox": [
+        0.60391,
+        0.05972,
+        0.03281,
+        0.05972
+      ],
+      "area": 1141,
+      "dominant_text_color": "#282c4b"
+    },
+    {
+      "bbox": [
+        0.63984,
+        0.05972,
+        0.03203,
+        0.05972
+      ],
+      "area": 1293,
+      "dominant_text_color": "#181d42"
+    },
+    {
+      "bbox": [
+        0.03828,
+        0.06111,
+        0.07187,
+        0.06111
+      ],
+      "area": 2168,
+      "dominant_text_color": "#252c4d"
+    },
+    {
+      "bbox": [
+        0.39297,
+        0.06111,
+        0.03281,
+        0.05833
+      ],
+      "area": 1400,
+      "dominant_text_color": "#282b49"
+    },
+    {
+      "bbox": [
+        0.46406,
+        0.06111,
+        0.03281,
+        0.05833
+      ],
+      "area": 930,
+      "dominant_text_color": "#151c41"
+    },
+    {
+      "bbox": [
+        0.53438,
+        0.06111,
+        0.03281,
+        0.05833
+      ],
+      "area": 1156,
+      "dominant_text_color": "#1f2143"
+    },
+    {
+      "bbox": [
+        0.56953,
+        0.06111,
+        0.03203,
+        0.05833
+      ],
+      "area": 1240,
+      "dominant_text_color": "#0d143f"
+    },
+    {
+      "bbox": [
+        0.11641,
+        0.06667,
+        0.02578,
+        0.00972
+      ],
+      "area": 231,
+      "dominant_text_color": "#0c143f"
+    },
+    {
+      "bbox": [
+        0.42891,
+        0.07222,
+        0.01328,
+        0.04028
+      ],
+      "area": 272,
+      "dominant_text_color": "#161b40"
+    },
+    {
+      "bbox": [
+        0.15156,
+        0.07778,
+        0.00703,
+        0.0125
+      ],
+      "area": 66,
+      "dominant_text_color": "#1f2342"
+    },
+    {
+      "bbox": [
+        0.60469,
+        0.09167,
+        0.00859,
+        0.02639
+      ],
+      "area": 122,
+      "dominant_text_color": "#282c46"
+    },
+    {
+      "bbox": [
+        0.3625,
+        0.1,
+        0.00781,
+        0.02222
+      ],
+      "area": 109,
+      "dominant_text_color": "#3b4262"
+    },
+    {
+      "bbox": [
+        0.15156,
+        0.10139,
+        0.00781,
+        0.0125
+      ],
+      "area": 68,
+      "dominant_text_color": "#222749"
+    },
+    {
+      "bbox": [
+        0.11328,
+        0.10417,
+        0.03203,
+        0.00972
+      ],
+      "area": 285,
+      "dominant_text_color": "#0a1445"
+    },
+    {
+      "bbox": [
+        0.0375,
+        0.14444,
+        0.45,
+        0.57778
+      ],
+      "area": 3680,
+      "dominant_text_color": "#dee6f7"
+    },
+    {
+      "bbox": [
+        0.50625,
+        0.14444,
+        0.45781,
+        0.04167
+      ],
+      "area": 2344,
+      "dominant_text_color": "#fdfdfd"
+    },
+    {
+      "bbox": [
+        0.03281,
+        0.18194,
+        0.45312,
+        0.59444
+      ],
+      "area": 2204,
+      "dominant_text_color": "#fefdfe"
+    },
+    {
+      "bbox": [
+        0.48594,
+        0.18889,
+        0.47969,
+        0.58889
+      ],
+      "area": 4188,
+      "dominant_text_color": "#fdfdfe"
+    },
+    {
+      "bbox": [
+        0.96172,
+        0.77083,
+        0.00156,
+        0.03611
+      ],
+      "area": 27,
+      "dominant_text_color": "#fefeff"
+    },
+    {
+      "bbox": [
+        0.0375,
+        0.77361,
+        0.43828,
+        0.03056
+      ],
+      "area": 602,
+      "dominant_text_color": "#c7d7f4"
+    },
+    {
+      "bbox": [
+        0.03438,
+        0.80556,
+        0.15,
+        0.11806
+      ],
+      "area": 1761,
+      "dominant_text_color": "#6784d6"
+    },
+    {
+      "bbox": [
+        0.86484,
+        0.81111,
+        0.09844,
+        0.1125
+      ],
+      "area": 1286,
+      "dominant_text_color": "#828696"
+    },
+    {
+      "bbox": [
+        0.04766,
+        0.83194,
+        0.01406,
+        0.03194
+      ],
+      "area": 179,
+      "dominant_text_color": "#5384e1"
+    },
+    {
+      "bbox": [
+        0.06328,
+        0.83333,
+        0.01562,
+        0.03056
+      ],
+      "area": 223,
+      "dominant_text_color": "#4a84e2"
+    },
+    {
+      "bbox": [
+        0.07969,
+        0.83333,
+        0.01641,
+        0.03056
+      ],
+      "area": 230,
+      "dominant_text_color": "#427ddf"
+    },
+    {
+      "bbox": [
+        0.17578,
+        0.83611,
+        0.01406,
+        0.02639
+      ],
+      "area": 185,
+      "dominant_text_color": "#686a79"
+    },
+    {
+      "bbox": [
+        0.2875,
+        0.83611,
+        0.01328,
+        0.02639
+      ],
+      "area": 178,
+      "dominant_text_color": "#6b7084"
+    },
+    {
+      "bbox": [
+        0.31719,
+        0.83611,
+        0.01484,
+        0.02639
+      ],
+      "area": 254,
+      "dominant_text_color": "#6c7080"
+    },
+    {
+      "bbox": [
+        0.33203,
+        0.83611,
+        0.01484,
+        0.02639
+      ],
+      "area": 197,
+      "dominant_text_color": "#7d7f91"
+    },
+    {
+      "bbox": [
+        0.34766,
+        0.83611,
+        0.01328,
+        0.02778
+      ],
+      "area": 245,
+      "dominant_text_color": "#656a77"
+    },
+    {
+      "bbox": [
+        0.36172,
+        0.83611,
+        0.01484,
+        0.02778
+      ],
+      "area": 220,
+      "dominant_text_color": "#6e7286"
+    },
+    {
+      "bbox": [
+        0.37734,
+        0.83611,
+        0.01484,
+        0.02778
+      ],
+      "area": 251,
+      "dominant_text_color": "#696b80"
+    },
+    {
+      "bbox": [
+        0.39297,
+        0.83611,
+        0.01328,
+        0.02778
+      ],
+      "area": 152,
+      "dominant_text_color": "#797c89"
+    },
+    {
+      "bbox": [
+        0.14219,
+        0.8375,
+        0.00234,
+        0.02361
+      ],
+      "area": 49,
+      "dominant_text_color": "#8d919b"
+    },
+    {
+      "bbox": [
+        0.30312,
+        0.8375,
+        0.0125,
+        0.00556
+      ],
+      "area": 54,
+      "dominant_text_color": "#505263"
+    },
+    {
+      "bbox": [
+        0.11406,
+        0.83889,
+        0.01562,
+        0.02222
+      ],
+      "area": 211,
+      "dominant_text_color": "#5c6476"
+    },
+    {
+      "bbox": [
+        0.14609,
+        0.83889,
+        0.00234,
+        0.02222
+      ],
+      "area": 47,
+      "dominant_text_color": "#676c77"
+    },
+    {
+      "bbox": [
+        0.19609,
+        0.83889,
+        0.01562,
+        0.02222
+      ],
+      "area": 210,
+      "dominant_text_color": "#64687a"
+    },
+    {
+      "bbox": [
+        0.25156,
+        0.83889,
+        0.03047,
+        0.02222
+      ],
+      "area": 344,
+      "dominant_text_color": "#656c7e"
+    },
+    {
+      "bbox": [
+        0.14922,
+        0.84167,
+        0.02187,
+        0.01944
+      ],
+      "area": 238,
+      "dominant_text_color": "#747888"
+    },
+    {
+      "bbox": [
+        0.2125,
+        0.84167,
+        0.03516,
+        0.01944
+      ],
+      "area": 350,
+      "dominant_text_color": "#6a6f80"
+    },
+    {
+      "bbox": [
+        0.13047,
+        0.84444,
+        0.00703,
+        0.01667
+      ],
+      "area": 65,
+      "dominant_text_color": "#75798d"
+    },
+    {
+      "bbox": [
+        0.13828,
+        0.84583,
+        0.00234,
+        0.01528
+      ],
+      "area": 33,
+      "dominant_text_color": "#838595"
+    },
+    {
+      "bbox": [
+        0.24844,
+        0.84583,
+        0.00234,
+        0.01528
+      ],
+      "area": 32,
+      "dominant_text_color": "#6b7080"
+    },
+    {
+      "bbox": [
+        0.30391,
+        0.84722,
+        0.01094,
+        0.00417
+      ],
+      "area": 42,
+      "dominant_text_color": "#727688"
+    },
+    {
+      "bbox": [
+        0.40859,
+        0.85417,
+        0.00469,
+        0.00972
+      ],
+      "area": 30,
+      "dominant_text_color": "#858897"
+    },
+    {
+      "bbox": [
+        0.30234,
+        0.85694,
+        0.01406,
+        0.00417
+      ],
+      "area": 53,
+      "dominant_text_color": "#838795"
+    },
+    {
+      "bbox": [
+        0.00156,
+        0.88889,
+        0.02266,
+        0.02361
+      ],
+      "area": 36,
+      "dominant_text_color": "#fefefe"
+    },
+    {
+      "bbox": [
+        0.24609,
+        0.89583,
+        0.61875,
+        0.02778
+      ],
+      "area": 6838,
+      "dominant_text_color": "#7a7e8f"
+    },
+    {
+      "bbox": [
+        0.18438,
+        0.89861,
+        0.0625,
+        0.02917
+      ],
+      "area": 558,
+      "dominant_text_color": "#797c8d"
+    },
+    {
+      "bbox": [
+        0.45,
+        0.89861,
+        0.0125,
+        0.00417
+      ],
+      "area": 47,
+      "dominant_text_color": "#676975"
+    },
+    {
+      "bbox": [
+        0.94375,
+        0.91528,
+        0.00469,
+        0.00833
+      ],
+      "area": 32,
+      "dominant_text_color": "#76798c"
+    },
+    {
+      "bbox": [
+        0.44922,
+        0.91667,
+        0.01406,
+        0.00556
+      ],
+      "area": 68,
+      "dominant_text_color": "#b1b3be"
+    },
+    {
+      "bbox": [
+        0.15937,
+        0.95278,
+        0.04297,
+        0.00139
+      ],
+      "area": 55,
+      "dominant_text_color": "#dde5f8"
+    },
+    {
+      "bbox": [
+        0.24531,
+        0.95278,
+        0.7125,
+        0.00139
+      ],
+      "area": 912,
+      "dominant_text_color": "#dde6f8"
+    }
+  ],
+  "blank_regions": [
+    {
+      "bbox": [
+        0.4375,
+        0.77778,
+        0.5625,
+        0.11111
+      ],
+      "cell_area": 9,
+      "mean_local_std": 0.863
+    },
+    {
+      "bbox": [
+        0.375,
+        0.44444,
+        0.0625,
+        0.22222
+      ],
+      "cell_area": 2,
+      "mean_local_std": 0.0
+    }
+  ]
+}

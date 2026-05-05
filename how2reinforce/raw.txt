@@ -1,0 +1,1149 @@
+                    苏州大学本科生毕业设计（论文）
+
+
+        肺癌患者 PD-1 疗效与肠道菌群关联分析
+
+                           摘要
+
+   肺癌是全球发病率和死亡率最高的恶性肿瘤之一，以 PD-1/PD-L1 为靶点的免疫
+检查点抑制剂（immune checkpoint inhibitors，ICI）已成为非小细胞肺癌（non-small
+cell lung cancer，NSCLC）的标准治疗方案。PD-L1 肿瘤比例评分（tumor proportion
+score，TPS）是目前临床最常用的疗效预测标志物，但其预测准确性仍有局限。近
+年来多项研究报道肠道微生物组与 ICI 疗效存在关联，但针对不同 TPS 水平肺癌患
+者肠道微生物组的比较研究仍然较少。
+   本研究对 77 例肺癌患者粪便样本行宏基因组鸟枪法测序，其中 52 例按 PD-L1
+TPS 分为 TPS<1%（n=17）、1-49%（n=18）和≥50%（n=17）三组，基于 GTDB 注
+释和 RPKM 标准化，从多样性、差异物种、共现网络、抗生素耐药基因（antibiotic
+resistance genes，ARGs）及功能通路等层面开展分析。
+   结 果 表 明 ， 三 组 间 α 多 样 性 （ Pielou 均 匀 度 p=0.037 ） 和 β 多 样 性
+（PERMANOVA p<0.001）均存在显著差异，TPS<1%组多样性偏低。LEfSe 鉴定出
+21 个物种和 7 个属水平差异标记物（LDA≥2.0），TPS 1-49%组富集 Blautia_A
+sp003471165 等产丁酸菌。共现网络呈模块化结构（65 节点、187 边、4 个社区模
+块）。万古霉素和氯霉素耐药基因在 TPS≥50%组显著富集，微生物组与 ARG 谱显
+著关联（Procrustes p=0.001）。功能通路分析显示 TPS<1%组以核糖体和翻译通路上
+调为特征，TPS 1-49%组以丁酸代谢通路为特征。
+   上述结果表明不同 PD-L1 TPS 水平肺癌患者的肠道微生物组在组成和功能上存
+在差异，这一发现有助于理解微生物组与肿瘤免疫分层标志物之间的关系，也可为
+后续基于微生物组的免疫治疗疗效预测研究提供参考。
+     关键词：肠道微生物组；PD-L1；宏基因组；免疫检查点抑制剂；抗生素耐药
+基因
+
+
+
+
+                             -4-
+                              苏州大学本科生毕业设计（论文）
+
+
+  Analysis of the Association between PD-1 Efficacy and
+            Gut Microbiota in Lung Cancer Patients
+
+                                      Abstract
+
+    Lung cancer remains the leading cause of cancer-related incidence and mortality
+worldwide. Immune checkpoint inhibitors (ICIs) targeting PD-1/PD-L1 have become the
+standard of care for non-small cell lung cancer (NSCLC). PD-L1 tumor proportion score
+(TPS) is the most widely used predictive biomarker, yet its accuracy remains limited.
+Accumulating evidence links the gut microbiome to ICI efficacy; however, systematic
+comparisons across PD-L1 TPS strata in lung cancer patients remain scarce.
+    Fecal samples from 77 lung cancer patients underwent shotgun metagenomic
+sequencing. Among them, 52 with confirmed PD-L1 TPS results were stratified into
+TPS<1% (n=17), 1-49% (n=18), and ≥50% (n=17) groups. Taxonomic annotation used the
+GTDB database with RPKM normalization. Analyses covered diversity, differential taxa,
+co-occurrence networks, antibiotic resistance genes (ARGs), and functional pathways.
+    Significant differences were observed in both alpha diversity (Pielou's evenness
+p=0.037) and beta diversity (PERMANOVA p<0.001), with the TPS<1% group exhibiting
+lower diversity. LEfSe identified 21 species-level and 7 genus-level biomarkers
+(LDA≥2.0); the TPS 1-49% group was enriched with butyrate-producing taxa including
+Blautia_A sp003471165. The co-occurrence network showed modular structure (65 nodes,
+187 edges, 4 modules). Vancomycin and chloramphenicol resistance genes were
+significantly enriched in the TPS≥50% group, with a significant microbiome-ARG
+association (Procrustes p=0.001). Functional analysis revealed ribosome and translation
+pathways upregulated in TPS<1%, and butyrate metabolism pathways enriched in TPS 1-
+49%.
+    This study reveals compositional and functional differences in the gut microbiome
+across PD-L1 TPS levels in lung cancer patients, providing new evidence for the
+microbiome-immune biomarker relationship and references for microbiome-based
+immunotherapy prediction.
+
+
+
+
+                                           -5-
+                               苏州大学本科生毕业设计（论文）
+
+    Keywords: gut microbiome ； PD-L1 ； metagenomics ； immune checkpoint
+inhibitors；antibiotic resistance genes
+
+
+
+
+                                         -6-
+                                       苏州大学本科生毕业设计（论文）
+
+                                                    目录
+
+第 1 章 引言 ...................................................................................................... 9
+
+   1.1 肺癌流行病学与免疫治疗现状 ............................................................. 9
+   1.2 PD-1/PD-L1 免疫检查点抑制剂与 PD-L1 TPS 分层 ......................... 10
+   1.3 肠道微生物组与肿瘤免疫治疗 ........................................................... 11
+   1.4 肠道抗生素耐药基因组研究进展 ....................................................... 12
+   1.5 研究目的与意义 ................................................................................... 12
+
+第 2 章 材料与方法 ........................................................................................ 14
+
+   2.1 研究对象与样本采集 ........................................................................... 14
+   2.2 宏基因组测序与数据预处理 ............................................................... 14
+   2.3 微生物组成分析 ................................................................................... 15
+   2.4 α 多样性分析......................................................................................... 15
+   2.5 β 多样性分析......................................................................................... 15
+   2.6 差异物种鉴定 ....................................................................................... 16
+   2.7 微生物共现网络分析 ........................................................................... 16
+   2.8 抗生素耐药基因分析 ........................................................................... 17
+   2.9 微生物组与耐药基因组关联分析 ....................................................... 17
+   2.10 功能通路分析 ..................................................................................... 17
+   2.11 统计分析.............................................................................................. 18
+
+第 3 章 结果与分析 ........................................................................................ 19
+
+   3.1 肠道微生物组 α 多样性分析 ............................................................... 19
+   3.2 肠道微生物组 β 多样性分析................................................................ 20
+   3.3 肠道微生物组组成分析 ....................................................................... 21
+
+                                                       -7-
+                                         苏州大学本科生毕业设计（论文）
+
+   3.4 基于 PD-L1 TPS 分组的差异物种分析 ............................................... 23
+   3.5 微生物共现网络分析 ........................................................................... 26
+   3.6 肠道耐药基因组分析 ........................................................................... 27
+   3.7 微生物组与耐药基因组的关联分析 ................................................... 28
+   3.8 肠道微生物组功能通路分析 ............................................................... 29
+
+第 4 章 讨论 .................................................................................................... 32
+
+第 5 章 结论 .................................................................................................... 35
+
+参考文献 ......................................................................................................... 36
+
+致 谢 ................................................................................................................ 43
+
+
+
+
+                                                         -8-
+                      苏州大学本科生毕业设计（论文）
+
+
+                          第 1 章 引言
+
+1.1 肺癌流行病学与免疫治疗现状
+
+       肺癌是全球发病率和死亡率最高的恶性肿瘤。全球癌症观察站（Global Cancer
+Observatory，GLOBOCAN）发布的 2022 年数据显示，全球新发癌症约 2000 万例，
+癌症相关死亡约 970 万例，其中肺癌新发约 250 万例，死亡约 180 万例[1-3]。中国的
+形势同样不容乐观。2022 年全国新发癌症约 482.47 万例，肺癌以 106.06 万例居各癌
+种首位，占全部新发病例的 22%左右[4]。长期吸烟、空气污染及职业暴露是肺癌的
+主要危险因素，而近年来非吸烟人群肺癌发病率呈上升趋势，同样值得关注[5]。
+       从病理分型来看，非小细胞肺癌（non-small cell lung cancer，NSCLC）约占全
+部肺癌的 85%，涵盖腺癌、鳞状细胞癌、大细胞癌等亚型。NSCLC 的治疗模式已从
+传统化疗逐步过渡到靶向治疗和免疫治疗。携带 EGFR、ALK、ROS1 等驱动基因突
+变的患者可接受相应的靶向药物治疗 [6]；对于缺乏可靶向突变的晚期患者，免疫检
+查点抑制剂（immune checkpoint inhibitors，ICI）则提供了新的治疗选择[7]。2015 年
+以来，CheckMate 系列和 KEYNOTE 系列等大型随机对照试验相继确立了 ICI 在
+NSCLC 各线治疗中的地位。帕博利珠单抗（pembrolizumab）单药已成为 PD-L1 高
+表达（TPS≥50%）NSCLC 患者的一线标准方案[8]，联合化疗方案则适用于更广泛的
+晚期 NSCLC 人群[9]。纳武利尤单抗（nivolumab）在晚期鳞状和非鳞状 NSCLC 的二
+线治疗中均优于多西他赛，可延长总生存期 [10,11]。KEYNOTE-010 进一步证实了帕
+博利珠单抗在经治 PD-L1 阳性 NSCLC 中的获益[12]。阿替利珠单抗（atezolizumab）
+和度伐利尤单抗（durvalumab）分别在经治和 III 期放化疗后巩固治疗中带来了生存
+获益[13,14]。
+       目前 ICI 的适应证已从 NSCLC 扩展到黑色素瘤[15-17]、肾细胞癌[18]、尿路上皮癌
+[19]
+   等多种实体瘤。但 ICI 的实际获益人群仍然有限。约 20%-40%的 NSCLC 患者能
+对单药 ICI 产生持续应答[20,21]，其余患者要么从未对治疗起效（原发性耐药），要
+么在初始获益后逐渐耐药（获得性耐药）。疗效的高度异质性促使研究者持续寻找
+更精准的疗效预测标志物，同时探索联合治疗策略来扩大免疫治疗的受益人群[22]。
+
+
+
+                              -9-
+                         苏州大学本科生毕业设计（论文）
+
+1.2 PD-1/PD-L1 免疫检查点抑制剂与 PD-L1 TPS 分层
+
+       程序性死亡受体-1（programmed cell death protein 1, PD-1）是 1992 年首次被克
+隆的 I 型跨膜蛋白，主要表达于活化的 T 细胞、B 细胞及自然杀伤细胞表面[23]。PD-
+1 与其配体 PD-L1（又称 B7-H1 或 CD274）结合后，可招募 SHP-2 磷酸酶，抑制 T
+细胞受体（T cell receptor，TCR）下游信号转导，负向调控 T 细胞活化及效应功能
+[24]
+   。正常生理条件下，PD-1/PD-L1 通路参与维持免疫耐受，防止自身免疫反应的发
+生。PD-1 基因敲除小鼠可自发出现狼疮样自身免疫性疾病，证实了该通路在免疫稳
+态中的作用[25]。
+       肿瘤细胞可利用 PD-1/PD-L1 通路逃避宿主免疫监视。多种实体瘤上调 PD-L1
+表达，与肿瘤微环境中浸润 T 细胞表面的 PD-1 结合，向 T 细胞传递抑制性信号，
+导致其功能耗竭乃至凋亡[26,27]。阻断 PD-1 与 PD-L1 的相互作用能够恢复 T 细胞的
+抗肿瘤活性，使癌症-免疫循环重新运转[28]，这是 PD-1/PD-L1 抑制剂的作用基础[29]。
+与 PD-1/PD-L1 通路类似，细胞毒性 T 淋巴细胞相关蛋白 4（cytotoxic T-lymphocyte-
+associated protein 4, CTLA-4）也是一种免疫检查点分子，通过竞争性结合 B7 分子抑
+制 T 细胞活化，阻断 CTLA-4 同样可增强抗肿瘤免疫[30]。
+       PD-L1 肿瘤比例评分（tumor proportion score，TPS）是目前临床上应用最广的
+ICI 疗效预测标志物，定义为 PD-L1 阳性肿瘤细胞占全部活肿瘤细胞的百分比，通
+过免疫组化染色检测。KEYNOTE-024 和 KEYNOTE-042 的亚组分析表明，TPS 越
+高，帕博利珠单抗单药治疗的获益越明显[8,31]。据此，临床上将患者分为三个层级：
+TPS<1%（PD-L1 阴性）、TPS 1-49%（PD-L1 低表达）和 TPS≥50%（PD-L1 高表
+达），以指导治疗方案的选择。不过，PD-L1 TPS 的预测能力并不理想。部分
+TPS<1%的患者仍可从 ICI 治疗中获益，部分 TPS≥50%的患者却对治疗无应答。这
+种局限性推动了补充性生物标志物的研究，肿瘤突变负荷（tumor mutation burden，
+TMB）、微卫星不稳定性（microsatellite instability，MSI）和肠道微生物组特征都
+是正在被考察的候选指标[32,33]。
+
+
+
+
+                                 -10-
+                      苏州大学本科生毕业设计（论文）
+
+1.3 肠道微生物组与肿瘤免疫治疗
+
+   人体肠道寄居着约 3.8×10^13 个微生物细胞，其编码基因总数约为人类基因组
+的 150 倍[34]。人类微生物组计划（Human Microbiome Project，HMP）和 MetaHIT 等
+国际合作项目的研究显示，个体间肠道菌群在分类学组成上差异显著，但功能代谢
+通路的总体格局相对保守[35,36]。肠道微生物群落广泛参与宿主的营养代谢、肠道屏
+障功能维持[37]以及免疫系统的发育调控 [38-42]。在分子层面已有较多阐释：共生菌产
+生的多糖 A 可驱动免疫系统成熟 [43] ，特定梭菌属物种能诱导结肠调节性 T 细胞
+（regulatory T cell，Treg）分化[44]，分节丝状菌促进辅助性 T 细胞 17（T helper 17,
+Th17）产生[45]。肠道菌群的紊乱还与肥胖等代谢性疾病相关[46]。
+   2015 年，两篇同期发表在 Science 的研究将肠道菌群与肿瘤免疫治疗联系起来：
+一项报道了 CTLA-4 阻断的抗肿瘤效应依赖于脆弱拟杆菌（Bacteroides fragilis）[47]，
+另一项发现共生双歧杆菌（Bifidobacterium）可通过增强树突状细胞（dendritic cell，
+DC）功能促进抗 PD-L1 治疗效果[48]。2018 年，三项独立发表在 Science 的研究再次
+引 发 关 注 。 其 中 一 项 纳 入 249 名 接 受 抗 PD-1 治 疗 的 上 皮 性 肿 瘤 患 者 ， 发 现
+Akkermansia muciniphila 与治疗应答正相关[49]；一项对 112 名黑色素瘤患者的分析观
+察到应答者肠道菌群多样性更高、Faecalibacterium 富集[50]；还有一项在转移性黑色
+素瘤队列中鉴定出包括 Bifidobacterium longum 在内的疗效相关菌谱[51]。上述工作奠
+定了肠道微生物组作为 ICI 疗效调控因子的研究基础[52-54]。此后，由 11 株共生菌组
+成的联合体被证实可诱导 CD8 T 细胞并增强抗肿瘤免疫[55]；黑色素瘤患者中也报告
+了与 ICI 临床应答及免疫相关不良反应相关的肠道微生物组特征[56]。在治疗转化方
+面，两项临床试验证明粪菌移植（fecal microbiota transplantation，FMT）可逆转黑
+色素瘤患者对抗 PD-1 治疗的耐药[57,58]。
+   肺癌领域的相关证据也在积累。一项对 37 名接受纳武利尤单抗治疗的中国
+NSCLC 患者的分析发现，应答者肠道菌群多样性显著高于非应答者[59]。另有研究报
+告了肠道菌群组成与 NSCLC 患者 PD-1 治疗应答之间的关联[60]，胃肠道肿瘤中也有
+类似的观察[61]。这些结果提示肠道微生物组可能成为免疫治疗疗效的补充性预测标
+志物，但不同 PD-L1 TPS 水平的肺癌患者肠道微生物组是否存在系统性差异，目前
+
+
+
+                              -11-
+                   苏州大学本科生毕业设计（论文）
+
+尚缺乏比较研究。PD-L1 表达受肿瘤微环境免疫状态影响，肠道菌群又可通过多条
+途径调控全身免疫应答，两者之间是否存在关联，有待进一步验证。
+
+1.4 肠道抗生素耐药基因组研究进展
+
+   抗生素耐药性（antimicrobial resistance，AMR）是当前全球面临的突出公共卫
+生问题。世界卫生组织预测，如果不采取有效措施，到 2050 年每年将有 1000 万人
+死于耐药感染 [62] 。肠道微生物组是抗生素耐药基因（antibiotic resistance genes，
+ARGs）的主要储库之一，被称为“肠道耐药基因组”（gut resistome）[63]。随着宏基
+因组测序技术的普及，研究者可直接从粪便样本中检测和定量 ARGs，不再依赖传
+统培养方法。
+   肿瘤患者的 ARGs 分布具有特殊的临床意义。肿瘤患者免疫功能受损，反复住
+院治疗，感染风险较高，抗生素使用也更为频繁。频繁的抗生素暴露一方面加剧肠
+道菌群失调，另一方面可能促进耐药基因在肠道菌群中富集并发生水平转移 [64]。已
+有研究指出，免疫治疗前使用抗生素会降低 ICI 的疗效[65,66]，抗生素选择压力导致
+的耐药基因富集可能是其中的机制之一。ARGs-OAP（Antibiotic Resistance Genes
+Online Analysis Pipeline）等生物信息学工具的出现，使从宏基因组数据中系统分析
+ARGs 的丰度、多样性及类型分布成为可能[67]。
+   不同 PD-L1 TPS 水平的肺癌患者肠道 ARG 谱是否存在差异，这种差异与微生
+物组组成如何关联，目前尚未得到充分研究。回答这些问题有助于理解肿瘤免疫状
+态与肠道耐药生态之间的相互作用，也可为免疫治疗期间的抗感染用药管理提供参
+考。
+
+1.5 研究目的与意义
+
+   基于上述背景，本研究对不同 PD-L1 TPS 表达水平肺癌患者的肠道微生物组进
+行系统分析。具体目标如下：（1）比较三个 PD-L1 TPS 组间肠道微生物的 α 和 β 多
+样性差异；（2）描述各组肠道微生物组的物种组成，鉴定组间差异标记物种和标记
+属；（3）构建差异物种的共现网络，分析微生物间的生态互作模式；（4）比较三
+组间肠道抗生素耐药基因组的差异，探索微生物组与耐药基因谱的关联；（5）利用
+HUMAnN3 进行功能通路分析，考察不同 TPS 组间的代谢功能差异。
+                          -12-
+              苏州大学本科生毕业设计（论文）
+
+  本研究的意义体现在以下几方面。其一，从微生物组学角度为 PD-L1 TPS 这一
+临床免疫分层指标提供生物学层面的补充解读，帮助理解 PD-L1 表达水平与宿主肠
+道免疫微生态之间的潜在关联。其二，整合物种组成、多样性、耐药基因组和功能
+通路数据，为不同 PD-L1 TPS 水平的肺癌患者建立肠道微生物组的综合特征谱。其
+三，为后续开发基于肠道微生物组的免疫治疗疗效预测模型和个体化干预方案积累
+数据基础。
+
+
+
+
+                    -13-
+                       苏州大学本科生毕业设计（论文）
+
+
+
+                       第 2 章 材料与方法
+
+2.1 研究对象与样本采集
+
+   本研究共纳入 77 例经组织病理学确诊的肺癌患者，所有患者均来自苏州大学附
+属医院。纳入标准为：（1）年龄≥18 周岁；（2）经病理学确诊为肺癌（包括
+NSCLC 和小细胞肺癌）；（3）签署知情同意书。排除标准为：（1）合并其他原发
+恶性肿瘤；（2）严重肝肾功能不全；（3）采样前 2 周内使用过抗生素或益生菌制
+剂。
+   粪便样本采集使用无菌粪便采集管，患者在排便后立即将约 5g 新鲜粪便置入含
+RNA 保存液的采集管中，随即冷链运输至实验室，-80°C 冻存备用。样本采集时间
+为免疫治疗前的基线时间点。77 例患者中，52 例同时具有免疫组化 PD-L1 TPS 检测
+结果，按照临床通用的分层标准分为三组：TPS<1%组（n=17）、TPS 1-49%组
+（n=18）和 TPS≥50%组（n=17）。其余 25 例因 PD-L1 检测信息缺失未纳入分组比
+较分析。
+
+2.2 宏基因组测序与数据预处理
+
+   粪便样本 DNA 提取采用 QIAamp PowerFecal Pro DNA Kit（QIAGEN），按照
+厂家说明书操作。提取的基因组 DNA 经 Qubit 3.0 荧光定量仪和 1%琼脂糖凝胶电泳
+进行浓度和完整性评估后，构建 Illumina 测序文库（插入片段约 350bp），在
+Illumina NovaSeq 6000 平台进行双端 150bp（PE150）测序，每个样本目标测序深度
+不低于 10Gb clean data。
+   原始测序数据（raw reads）使用 fastp（v0.23.4）进行质量控制，包括：去除含
+接头序列（adapter）的 reads、去除 N 碱基比例>10%的 reads、裁剪低质量碱基
+（Q<20）、去除长度<50bp 的 reads。质控后的 clean reads 使用 Bowtie2（v2.4.5）与
+人类参考基因组（GRCh38）比对以去除宿主 DNA 污染。
+   分类学注释采用基于 GTDB（Genome Taxonomy Database）参考数据库的流程，
+GTDB 相较于传统 NCBI 分类体系具有更严格的系统发育一致性和更规范的命名规
+则。丰度定量采用 RPKM（reads per kilobase per million mapped reads）标准化方法，
+
+                             -14-
+                   苏州大学本科生毕业设计（论文）
+
+以校正基因长度和测序深度的影响。最终获得的丰度矩阵包含 77 个样本×5614 个分
+类单元，涵盖域、门、纲、目、科、属、种七个分类层级。在后续分析中，仅保留
+细菌域（domain Bacteria）的分类单元。
+
+2.3 微生物组成分析
+
+   微生物组成分析分别在门（phylum）、属（genus）和种（species）三个分类学
+水平进行。对每个样本的各分类单元丰度进行相对丰度转换（即各分类单元丰度占
+总丰度的百分比），以便于组间比较和可视化。
+   门水平分析展示所有检出门的相对丰度堆叠柱状图，以比较三组间优势门的组
+成差异。属水平分析选取相对丰度排名前 20 的属绘制组成柱状图。所有组成可视化
+图表均使用 Python 的 matplotlib 和 seaborn 库绘制，配色方案采用 Wong 色盲友好调
+色板以确保可及性。
+
+2.4 α 多样性分析
+
+   我们计算了以下 6 个 α 多样性指标：（1）Shannon 指数，综合反映物种丰富度
+和均匀度；（2）Simpson 指数，侧重于优势物种的权重，对物种均匀度更敏感；
+（3）Chao1 指数，通过低频物种的数量估计总物种丰富度；（4）Observed 物种数，
+直接统计各样本检测到的物种数量；（5）Pielou 均匀度指数（J'），衡量物种丰度
+分布的均匀程度，取值 0 到 1；（6）Good's Coverage，评估测序深度对群落的覆盖
+率。
+   各指标在三组间的差异使用 Kruskal-Wallis H 检验进行评估。对于 Kruskal-
+Wallis 检验显著的指标（p<0.05），进一步采用 Mann-Whitney U 检验进行两两组间
+比较，并使用 Benjamini-Hochberg（BH）方法校正多重比较的假阳性率（FDR）。
+以上分析在物种和属两个层级分别进行，使用 Python 的 scipy 和 scikit-bio 库实现。
+
+2.5 β 多样性分析
+
+   我们选用 Bray-Curtis 距离作为 β 多样性度量指标，基于 Bray-Curtis 距离矩阵采
+用主坐标分析（principal coordinates analysis，PCoA）进行降维可视化，各主坐标轴
+解释的方差百分比反映降维的信息保留程度。
+                           -15-
+                         苏州大学本科生毕业设计（论文）
+
+    统 计 学 检 验 采 用 置 换 多 元 方 差 分 析 （ permutational multivariate analysis of
+variance，PERMANOVA），基于 Bray-Curtis 距离矩阵，以 PD-L1 TPS 分组为因变
+量，进行 999 次随机置换。PERMANOVA 返回的 F 统计量反映组间距离与组内距离
+之比，R²（决定系数）反映分组因素解释的总方差百分比，p 值基于置换分布计算。
+分析分别在物种和属两个分类学水平进行。随机种子设定为 42 以确保结果的可重复
+性。
+
+2.6 差异物种鉴定
+
+    差异物种鉴定采用线性判别分析效应量（linear discriminant analysis effect size，
+LEfSe）方法[68]。LEfSe 是一种专为高维微生物组数据设计的多步骤差异分析方法，
+其分析流程如下：
+    第一步，Kruskal-Wallis 秩和检验：在全部三组间进行非参数检验，筛选出在至
+少一个组中丰度显著不同的物种（显著性水平 α=0.05）。第二步，Wilcoxon 秩和检
+验：对通过第一步筛选的物种，进行所有两两组间配对比较，以验证差异的一致性。
+第三步，线性判别分析（linear discriminant analysis，LDA）：对通过前两步筛选的
+物种计算 LDA 效应量，以量化组间差异的生物学效应大小。分析中设定 LDA 阈值
+为 2.0，即仅报告 LDA 得分≥2.0 的差异物种作为生物标记物。LDA 得分>3.0 的物种
+被视为强标记物。分析分别在物种和属两个分类学水平进行。
+
+2.7 微生物共现网络分析
+
+    为探索差异物种间的生态互作关系，我们基于 LEfSe 鉴定的 65 个差异物种标记
+物构建了微生物共现网络。网络构建的具体步骤为：（1）计算 65 个差异物种在 52
+个样本中丰度的 Spearman 秩相关系数矩阵；（2）设定相关性阈值为|r|>0.6 且
+p<0.05，保留满足条件的相关关系对作为网络的边；（3）正相关关系（r>0.6）和负
+相关关系（r<-0.6）分别标注为正边和负边。
+    网络的社区结构使用 Louvain 算法进行划分，通过最大化模块度（modularity）
+识 别 紧 密 连 接 的 模 块 。 网 络 的 拓 扑 特 征 参 数 （ 节 点 度 degree 、 中 介 中 心 性
+betweenness centrality、聚类系数 clustering coefficient）使用 Python 的 networkx 库计
+算。Hub 物种定义为度中心性和中介中心性均排名前列的物种。
+                                   -16-
+                       苏州大学本科生毕业设计（论文）
+
+2.8 抗生素耐药基因分析
+
+   肠 道 抗 生 素 耐 药 基因（ ARGs ） 分 析 使 用 ARGs-OAP （ Antibiotic Resistance
+Genes Online Analysis Pipeline）流程 [67] ，将质控后的宏基因组 reads 与结构化的
+ARG 参考数据库进行比对，实现 ARGs 的检测和定量。ARGs 按照抗生素类型
+（type，如 beta-lactam、tetracycline、vancomycin 等）和耐药基因亚型（subtype，如
+特定的耐药基因家族）两个层级进行分类。
+   丰度标准化采用 16S rRNA 基因拷贝数标准化方法（copies per 16S rRNA gene），
+以 16S rRNA 基因作为细菌细胞数量的参照，更能反映单个细菌细胞携带 ARGs 的
+平均水平，适合于不同测序深度样本间的比较。ARGs 的 α 多样性和 β 多样性分析
+方法与微生物组分析一致，差异 ARGs 鉴定同样采用 LEfSe 方法（LDA 阈值 2.0）。
+
+2.9 微生物组与耐药基因组关联分析
+
+   为探索肠道微生物组成与 ARG 谱之间的关联，我们采用两种互补的分析策略。
+第一，Spearman 相关分析：计算 LEfSe 鉴定的 65 个差异物种与各 ARG 类型之间的
+Spearman 秩相关系数，并使用 Benjamini-Hochberg 方法进行 FDR 校正（q<0.05 视为
+显著）。结果以热图形式可视化。
+   第二，Procrustes 分析：Procrustes 分析是一种评估两个距离矩阵（或两组坐标）
+相似性的方法。分别构建基于微生物组（物种丰度 Bray-Curtis 距离）和 ARG 谱
+（ARG 丰度 Bray-Curtis 距离）的 PCoA 坐标，通过旋转、缩放和平移操作使两组坐
+标尽可能重合。M²统计量（0 到 1）衡量两组坐标之间的不一致程度（值越小表示
+一致性越高），统计显著性通过 999 次随机置换检验评估。
+
+2.10 功能通路分析
+
+   肠道微生物组的功能潜力分析使用 HUMAnN3（the HMP Unified Metabolic
+Analysis Network 3）流程[69]。HUMAnN3 以 MetaPhlAn 物种注释为基础，将宏基因
+组 reads 映射到已知的代谢通路和基因家族，实现社区水平的功能定量。分析结果包
+括 MetaCyc 代谢通路丰度、UniRef 基因家族丰度等。功能注释分别映射到 KEGG
+
+
+
+                                -17-
+                      苏州大学本科生毕业设计（论文）
+
+（Kyoto Encyclopedia of Genes and Genomes）和 GO（Gene Ontology）两个功能注释
+体系。
+   功能通路的差异分析同样采用 LEfSe 方法，在 KEGG 通路和 GO 条目两个层面
+分别进行。Fisher 精确检验用于评估差异通路在特定功能类别中的富集程度。
+
+2.11 统计分析
+
+   全部统计分析遵循以下原则：（1）由于微生物组数据通常不满足正态分布假设，
+组间比较一律采用非参数检验：三组间比较使用 Kruskal-Wallis H 检验，两组间比较
+使用 Mann-Whitney U 检验。（2）多重比较校正统一使用 Benjamini-Hochberg FDR
+方法，校正后的 q 值<0.05 视为统计学显著。（3）所有涉及随机化的分析步骤
+（PERMANOVA 置换检验、稀释曲线子抽样等）均使用固定随机种子 42，以确保
+结果的可重复性。（4）PERMANOVA 分析同时在 42 个不同的随机种子下运行以评
+估 R²估计值的稳定性。
+   数据处理和统计分析使用 Python 3.12.3 实现，主要依赖 numpy（数值计算）、
+pandas（数据操作）、scipy（统计检验）和 scikit-bio（生态学指标）库。可视化使
+用 matplotlib 和 seaborn 库，配色方案采用 Wong 色盲友好调色板：TPS<1%组为橙
+色 （ #E69F00 ） 、 TPS 1-49% 组 为 蓝 色 （ #56B4E9 ） 、 TPS≥50% 组 为 绿 色
+（#009E73）。图表以 PDF（600 DPI，适用于出版）和 PNG（300 DPI，适用于展
+示）双格式输出。
+
+
+
+
+                               -18-
+                      苏州大学本科生毕业设计（论文）
+
+
+
+                       第 3 章 结果与分析
+
+3.1 肠道微生物组 α 多样性分析
+
+   本节首先比较了不同 PD-L1 TPS 组间肠道微生物群落的 α 多样性。我们计算了
+Shannon、Pielou 均匀度指数等多个 α 多样性指标，并在物种水平上对三组进行了比
+较（图 1）。
+   Shannon 多样性指数方面，TPS<1%组的均值为 1.70±0.50，低于 TPS 1-49%组的
+2.00±0.30 和 TPS≥50%组的 1.99±0.31（Kruskal-Wallis 检验 p=0.050，处于统计学显
+著性的边界）。该 p 值恰好位于传统阈值上，但结合 Pielou 指数的显著结果，
+TPS<1%组肠道菌群多样性偏低的趋势仍具有生物学参考意义。
+   Pielou 均 匀 度 指 数 的 组 间 差 异 则 更 为 明 确 。 TPS<1% 组 的 Pielou 指 数 为
+0.52±0.14，显著低于 TPS 1-49%组（0.60±0.09）和 TPS≥50%组（0.60±0.09），
+Kruskal-Wallis 检验 p=0.037，达到了统计学显著水平。这表明 TPS<1%组不仅物种
+多样性偏低，其肠道菌群的丰度分布也更加不均匀。少数优势菌占据了更大的生态
+位份额，群落均匀度明显下降。而 TPS 1-49%组和 TPS≥50%组之间的均匀度几乎没
+有差别，多样性和均匀度的偏低主要集中在 PD-L1 阴性（TPS<1%）的患者群体中。
+   总体而言，α 多样性分析表明 PD-L1 低表达组的肠道微生物群落在多样性和均
+匀度两个维度上均偏低，提示这部分患者可能存在一定程度的肠道菌群生态失调。
+该生态特征与肿瘤免疫微环境中 PD-L1 低表达之间是否存在生物学联系，有待后续
+研究进一步验证。
+
+
+
+
+            图 1 不同 PD-L1 TPS 组间肠道微生物 α 多样性比较
+箱线图分别展示 Shannon 多样性指数（左）和 Pielou 均匀度指数（右）在三组间的
+分布。每组标注均值±标准差。组间差异采用 Kruskal-Wallis H 检验评估。*p<0.05。
+
+                              -19-
+                    苏州大学本科生毕业设计（论文）
+
+3.2 肠道微生物组 β 多样性分析
+
+   α 多样性分析显示 TPS<1%组在多样性和均匀度上与其他两组存在差异，但 α 多
+样性仅反映单个样本内部的多样性水平，无法刻画样本间群落组成的差异。为此，
+我们进一步通过 β 多样性分析比较三组之间肠道微生物群落的组成结构差异（图
+2）。
+   基于 Bray-Curtis 距离的 PERMANOVA 分析在物种水平上揭示了显著的组间差
+异（F=1.689, R²=0.064, p<0.001, 999 次置换），PD-L1 TPS 分组能够解释肠道微生物
+物种组成变异的约 6.4%，这一效应量与微生物组关联研究中的典型水平一致[71]。属
+水平的结果也支持这一判断（F=1.778, R²=0.068, p=0.008），解释了约 6.8%的组间
+变异。
+   属水平 PCoA 降维可视化进一步验证了上述结论（图 2）。前两个主坐标轴合
+计解释了 26.9%的总方差（PCoA1=15.0%, PCoA2=11.8%），三组样本在 PCoA 图上
+虽然存在一定重叠，但各组质心（centroid）的位置确实发生了偏移。三组患者的肠
+道菌群在宏观上呈现一定程度的分离，但个体间天然的高度变异在降维图上削弱了
+这一分离效果。
+   α 多样性和 β 多样性均呈现显著差异，二者结论相互印证。上述结果说明，不
+同 PD-L1 TPS 组的肠道微生物差异不仅体现在“微生物的种类组成和比例”上，
+TPS<1%组在整体多样性水平上也有所偏低。多层面的差异具有更强的生物学意义，
+因为特定菌种的丰度变化可以通过代谢产物和免疫信号影响宿主的免疫状态。
+
+
+
+
+                            -20-
+                      苏州大学本科生毕业设计（论文）
+
+
+
+
+        图 2 基于 Bray-Curtis 距离的属水平主坐标分析(PCoA)散点图
+每个点代表一个样本，颜色表示 PD-L1 TPS 分组（橙色: TPS<1%, 蓝色: TPS 1-49%,
+绿色: TPS≥50%）。椭圆为 95%置信椭圆。PCoA1 和 PCoA2 分别解释总方差的 15.0%
+          和 11.8%。PERMANOVA: F=1.778, R²=0.068, p=0.008。
+
+3.3 肠道微生物组组成分析
+
+   在 α 和 β 多样性分析的基础上，我们分别在门和属两个分类学水平描绘了各组
+的微生物组成（图 3、图 4），以直观展示三组肠道微生物的组成格局。
+   门 水 平 的 结 果 展 现 了 肠 道 菌 群 的 经 典 框 架 。 厚 壁 菌 门 （ Bacillota ， 旧 称
+Firmicutes）和拟杆菌门（Bacteroidota，旧称 Bacteroidetes）在三组中均为绝对优势
+门，两者合计占据各组总丰度的 75%以上，与健康人群肠道微生物组的已知特征一
+致。放线菌门（Actinobacteriota）、变形菌门（Pseudomonadota，旧称 Proteobacteria）
+和疣微菌门（Verrucomicrobiota）位列次优势门。由于本研究采用 GTDB 分类系统，
+其对传统门级命名有所修订，文中括号标注了对应的旧名称以方便读者对照。
+   属水平上，组间差异更为清晰。在三组合并的 Top 20 属中，Bacteroides、
+Streptococcus 和 Phocaeicola 位居前三。Bacteroides 在各组中均占据绝对优势，不过
+
+                               -21-
+                  苏州大学本科生毕业设计（论文）
+
+其在 TPS<1%组中的相对丰度略低于其他两组。Bifidobacterium 在 TPS 1-49%组的平
+均丰度明显高出其他两组，Prevotella 则在 TPS≥50%组中的丰度相对偏高。这些属水
+平的组成差异为后续 LEfSe 差异分析提供了初步的指向。
+
+
+
+
+              图 3 门水平肠道微生物组成堆叠柱状图
+堆叠柱状图展示三组在门水平的平均微生物组成。每种颜色代表一个门，高度表示
+该门的平均相对丰度。Bacillota(厚壁菌门)和 Bacteroidota(拟杆菌门)是所有组的优势
+                         门。
+
+
+
+
+                         -22-
+                            苏州大学本科生毕业设计（论文）
+
+
+
+
+                      图 4 属水平 Top20 肠道微生物组成柱状图
+堆叠柱状图展示三组在属水平相对丰度排名前 20 的属的平均组成分布。Bacteroides、
+                     Streptococcus 和 Phocaeicola 为前三优势属。
+
+3.4 基于 PD-L1 TPS 分组的差异物种分析
+
+    β 多样性分析已证实三组之间的微生物组成存在统计学显著差异。为进一步识
+别具体的差异物种和属，我们通过 LEfSe 方法在物种和属两个水平上进行了筛选
+（图 5、图 6）。
+    经 过 过 滤 后 ， 物 种 水 平 LEfSe 分 析 共 展 示 了 21 个 代 表 性 差 异 标 记 物 种
+（LDA≥2.0）。三组各有其特征性标记物种，呈现出清晰的组间分化。TPS<1%组富
+集 了 Ruminococcus_B gnavus 和 Bacteroides stercoris_A 两 个 物 种 。 其 中
+Ruminococcus_B gnavus 是一种与肠道炎症密切相关的物种，其在 PD-L1 阴性组中的
+富集与前述 α 多样性偏低的结果一致，因为 R. gnavus 的过度增殖往往伴随着菌群均
+匀度的下降。
+    TPS 1-49% 组 富 集 了 数 量 最 多 的 差 异 物 种 ， 包 括 Blautia_A sp003471165 、
+Mediterraneibacter   torques 、 Agathobacter   faecis 、 Bacteroides   stercoris 、
+Anaerobutyricum soehngenii 、 Blautia_A faecis 、 Faecalibacterium sp900539945 、
+
+                                      -23-
+                              苏州大学本科生毕业设计（论文）
+
+Sellimonas intestinalis 、 Bilophila wadsworthia 、 Oscillibacter welbionis 、 Bacteroides
+ovatus 和 Alistipes shahii。其中，该组富集的物种有相当一部分属于产短链脂肪酸的
+功能类群，如 Agathobacter faecis 和 Faecalibacterium sp900539945 等都是已知的产丁
+酸菌，这暗示 PD-L1 中等表达组的肠道微生态可能具有较为活跃的发酵代谢特征。
+    TPS≥50% 组 则 富 集 了 Limosilactobacillus mucosae 、 Eggerthella lenta 、
+Streptococcus parasanguinis 、 Streptococcus oralis_F 、 Streptococcus oralis 、
+Faecalibacterium longum 和 Alistipes onderdonkii 等 物 种 。 该 组 同 时 富 集 了 多 个
+Streptococcus 属的物种。链球菌是口腔和上呼吸道的常见定植菌，其在肠道中的富
+集可能反映了口-肠微生物轴（oral-gut axis）的某种异常迁移。Eggerthella lenta 则是
+一种能够代谢胆汁酸和药物的厌氧菌，已有文献报道其与免疫调节功能相关。
+    在属水平上，过滤后的 LEfSe 分析鉴定出 7 个差异标记属。TPS<1%组富集了
+Streptococcus；TPS 1-49%组富集了 Blautia_A、Ruminococcus_B、Mediterraneibacter、
+Oscillibacter 和 Bilophila；TPS≥50%组则富集了 Eggerthella。就功能生态学而言，
+TPS 1-49%组富集的多个属（Blautia_A、Oscillibacter 等）与短链脂肪酸产生和肠道
+屏障维护密切相关，而 TPS≥50%组富集的 Eggerthella 则更多参与胆汁酸代谢和免疫
+信号调控，后续功能通路分析对此做了进一步印证。
+
+
+
+
+                                         -24-
+               苏州大学本科生毕业设计（论文）
+
+
+
+
+       图 5 基于 LEfSe 的物种水平差异标记物 LDA 效应量图
+水平柱状图展示 LDA 得分≥2.0 的差异物种标记物。柱的长度表示 LDA 效应量，颜
+  色表示该物种富集的 PD-L1 TPS 组。共展示 21 个代表性差异物种标记物。
+
+
+
+
+                     -25-
+                       苏州大学本科生毕业设计（论文）
+
+             图 6 基于 LEfSe 的属水平差异标记物 LDA 效应量图
+  水平柱状图展示 LDA 得分≥2.0 的差异属标记物。共展示 7 个差异属标记物。
+
+3.5 微生物共现网络分析
+
+   差异物种并非孤立存在，它们在肠道生态系统中通过代谢互补和竞争关系形成
+复杂的互作网络。我们基于 LEfSe 鉴定的 65 个差异物种标记物，利用 Spearman 相
+关性（|r|>0.6, p<0.05）构建了微生物共现网络（图 7）。
+   最终的网络包含 65 个节点和 187 条边，网络密度为 0.090。其中，正相关关系
+多达 164 条（占 87.7%），负相关关系仅有 23 条（12.3%）。以协同共存为主导的
+网络格局在肠道微生物研究中较为常见，反映了肠道生态系统中互利共生和代谢互
+补关系的广泛存在。
+   Louvain 社区检测算法将网络划分为 4 个社区模块，模块内部的连接密度远高于
+模块间。来自不同 PD-L1 TPS 组的标记物种在网络中并没有截然分开，而是存在不
+少跨组的连接关系。这意味着差异物种之间的生态互作可能超越了 PD-L1 TPS 分层
+的界限，其共生或竞争关系更多地受到肠道局部微环境的驱动。
+   网 络 中 的 Hub 物 种 （ 即 度 中 心 性 和 中 介 中 心 性 均 较 高 的 节 点 ） 包 括
+Streptococcus hominis（度=11, 中介中心性=0.116）、Streptococcus oralis_F（度=9,
+中介中心性=0.109）和 Alistipes finegoldii（度=9, 中介中心性=0.108）。前两者均属
+于链球菌属，其在网络中的核心地位与 Streptococcus 属在属水平 LEfSe 中富集于
+TPS<1%组的结果相呼应，提示链球菌属物种在 PD-L1 低表达患者的肠道微生物互
+作网络中占据关键连接位置。A. finegoldii 属于拟杆菌门 Rikenellaceae 科，在多项研
+究中被认为是健康肠道生态的标志物种。上述 Hub 物种可能在维持差异物种间生态
+平衡方面发挥枢纽作用。
+
+
+
+
+                                -26-
+                    苏州大学本科生毕业设计（论文）
+
+
+
+
+                  图 7 差异物种微生物共现网络图
+网络基于 65 个 LEfSe 差异物种的 Spearman 相关性构建(|r|>0.6, p<0.05)。节点大小与
+度中心性成正比，颜色表示 Louvain 社区归属。蓝色实线表示正相关，红色虚线表
+            示负相关。网络包含 187 条边，4 个社区模块。
+
+3.6 肠道耐药基因组分析
+
+   除微生物组成外，肠道抗生素耐药基因（ARGs）的分布同样值得关注。通过
+ARGs-OAP 流程，我们从宏基因组数据中检测和定量了 ARGs，并比较了不同 PD-
+L1 TPS 组间的差异。
+   LEfSe 分析在 ARG type 水平发现了具有临床意义的差异。尤其突出的是万古霉
+素（vancomycin）和氯霉素（chloramphenicol）耐药基因在 TPS≥50%组中显著富集。
+万古霉素被视为治疗革兰氏阳性菌严重感染的“最后一道防线”，其耐药基因在 PD-
+L1 高表达组中的富集具有明确的临床警示意义。这可能意味着该组患者的肠道已积
+
+
+                            -27-
+                    苏州大学本科生毕业设计（论文）
+
+累了较高水平的万古霉素耐药，一旦免疫治疗期间发生需要经验性抗生素治疗的感
+染，临床医生在用药选择上需要额外谨慎。
+
+3.7 微生物组与耐药基因组的关联分析
+
+   微生物组成与耐药基因谱之间是否存在关联，是耐药基因生态学的核心问题之
+一。我们通过 Spearman 相关分析和 Procrustes 分析对此进行了探索（图 8、图 9）。
+   Spearman 相关分析检测到 22 对 FDR 显著的微生物-ARG 关联（BH 校正
+q<0.05）。其中相关性最强的是 Klebsiella pneumoniae 与磷霉素（fosfomycin）耐药
+基因（r=0.72, q<0.001），这一结果与 K. pneumoniae 作为多重耐药病原菌的已知特
+征完全吻合[74]。该菌种同时还与 beta-lactam 和氨基糖苷类耐药基因呈显著正相关，
+印证了其在 ARG 携带和传播中的核心角色。另一方面，Streptococcus parasanguinis
+与万古霉素和喹诺酮类耐药基因呈显著正相关，结合该物种在 TPS≥50%组中的富集，
+进一步佐证了该组患者肠道耐药风险偏高的判断。Bifidobacterium pseudocatenulatum
+则与多种 ARG 呈负相关趋势，该“保护性”关联与双歧杆菌属作为有益共生菌的已知
+特征一致，提示其可能通过竞争排斥机制限制耐药菌的定植扩张。
+   Procrustes 分析从整体层面进一步证实了上述关联（M²=0.560, p=0.001, 999 次置
+换），表明微生物组 PCoA 坐标与 ARG PCoA 坐标之间存在统计学显著的一致性。
+M²值意味着约 44%的 ARG 变异可以用微生物组成来解释，其余变异可能来自水平
+基因转移的随机性和质粒的独立动态等因素。
+
+
+
+
+                           -28-
+                   苏州大学本科生毕业设计（论文）
+
+                 图 8 微生物组-ARG 相关性热图
+热图展示 LEfSe 差异物种与 ARG 类型之间的 Spearman 相关系数。红色表示正相关，
+蓝色表示负相关。星号标记 FDR 显著的相关对(*q<0.05, **q<0.01, ***q<0.001)。仅
+                展示具有 FDR 显著关联的物种。
+
+
+
+
+             图 9 微生物组与耐药基因组 Procrustes 分析
+Procrustes 旋转对称图展示微生物组 PCoA 坐标（圆形）与 ARG PCoA 坐标（三角形）
+ 的对应关系。每对连线代表同一样本，线段越短表示两组数据的一致性越高。
+              M²=0.560, p=0.001（999 次置换检验）。
+
+3.8 肠道微生物组功能通路分析
+
+  物种组成的差异最终需落实到功能层面才具有生物学效应。我们使用
+HUMAnN3 流程对宏基因组数据进行了功能通路分析，在 KEGG 和 GO 两个注释体
+系下检测三组间的功能差异（图 10、图 11）。
+
+                           -29-
+                   苏州大学本科生毕业设计（论文）
+
+   LEfSe 分析揭示了组间显著的功能分化。KEGG 通路水平共有 68 条通路被鉴定
+为差异标记物（LDA≥2.0），具有明确的组特异性。TPS<1%组的特征通路以核糖体
+（Ribosome）和翻译相关通路为代表，其系统性上调提示该组肠道微生物可能处于
+较活跃的蛋白合成状态。TPS 1-49%组的特征则集中在转运蛋白（Transporters）、
+丁酸代谢（Butanoate metabolism）和氧化还原相关通路上。丁酸代谢通路的上调具
+有重要的生物学意义。丁酸是短链脂肪酸（short-chain fatty acids，SCFA）家族中的
+重要成员，对维持肠道屏障完整性和调节免疫功能具有重要作用 [70]，这与该组富集
+多种产丁酸菌的物种组成特征相互印证。TPS≥50%组的差异通路比较分散，没有形
+成一个统一的功能主题。
+   GO 注释体系下的分析进一步验证了上述发现。LEfSe 鉴定出 117 个差异 GO 条
+目，其功能分化模式与 KEGG 分析高度吻合。Fisher 精确检验的富集分析中，
+Ribosome 通路的富集显著性最为突出（Fisher p=5.02×10^-14），证明 TPS<1%组核
+糖体相关基因的上调是一种高度系统性的模式，而非个别基因的随机波动。上述“整
+体功能格局相似、特定模块活跃度不同”的分化格局说明，不同 PD-L1 TPS 组的肠道
+微生物在“做什么”的大方向上差别不大，但在某些具体的代谢环节上确实存在差异。
+
+
+
+
+          图 10 基于 LEfSe 的 KEGG 差异通路 LDA 效应量图
+水平柱状图展示代表性差异 KEGG 通路的 LDA 得分。TPS<1%组以核糖体和翻译通
+       路上调为特征，TPS 1-49%组以转运蛋白和丁酸代谢为特征。
+
+
+
+
+                          -30-
+                  苏州大学本科生毕业设计（论文）
+
+
+
+
+              图 11 KEGG 差异通路富集分析气泡图
+气泡图展示 Fisher 精确检验富集分析结果。气泡大小表示富集到的差异通路数量，
+颜色深浅表示-log10(p 值)。Ribosome 为最显著的富集通路类别(p=5.02×10^-14)。
+
+
+
+
+                         -31-
+                       苏州大学本科生毕业设计（论文）
+
+
+
+                           第 4 章 讨论
+
+   本研究系统比较了不同 PD-L1 TPS 表达水平肺癌患者肠道微生物组的多维度特
+征，发现 PD-L1 TPS 分组与肠道微生物组成结构之间存在统计学显著但效应量较小
+的关联。如何理解这种“显著但微弱”的关联，是讨论的核心。
+   α 多样性和 β 多样性的结果需要结合解读。α 多样性方面，Shannon 多样性指数
+（p=0.050）处于统计学显著性的边界，Pielou 均匀度指数（p=0.037）则达到显著水
+平，两者共同指向 TPS<1%组肠道微生物群落多样性和均匀度偏低的趋势。β 多样性
+方面，PERMANOVA 的显著结果（物种水平 p<0.001, R²=0.064）说明三组之间的物
+种组成比例确实存在系统性差异，尽管这种差异只能解释总变异的 6.4%。这意味着
+PD-L1 TPS 分组捕获的肠道微生物组变异虽然真实存在，但远小于其他未被建模的
+因素（如饮食习惯、用药史、年龄等）带来的变异。在 PCoA 降维图上，三组样本
+的部分重叠反映了个体间天然变异的存在。类似的效应模式在其他微生物组关联研
+究中并不少见，例如一项对 1135 名荷兰人群的大规模宏基因组研究发现，126 个与
+菌群相关的因素总共也仅解释了 18.7%的个体间差异[71]。
+   LEfSe 鉴 定 的 差 异 物 种 提 供 了 更 具 体 的 生 物 学 线 索 。 TPS<1% 组 富 集 的
+Ruminococcus_B gnavus（LDA=4.57）是一种与肠道炎症密切相关的物种，其产生的
+炎性多糖可激活树突状细胞并诱导 TNF-α 分泌[72]，在克罗恩病和溃疡性结肠炎患者
+的肠道中经常被发现富集[73]。R. gnavus 在 PD-L1 低表达组中的富集可能暗示该组患
+者肠道存在慢性低度炎症，而这种局部炎症能否通过肠-肺轴影响肿瘤微环境的 PD-
+L1 表达，仍需纵向数据的支持。
+   TPS 1-49% 组 富 集 了 数 量 最 多 的 差 异 物 种 ， 其 中 Blautia_A sp003471165 、
+Agathobacter faecis 和 Faecalibacterium sp900539945 等属于已知的产短链脂肪酸功能
+类群，结合该组丁酸代谢通路的上调，提示 PD-L1 中等表达组的肠道微生态可能具
+有相对活跃的发酵代谢特征。TPS≥50%组富集的 Eggerthella lenta 是一种能够代谢胆
+汁酸和药物的厌氧菌，已有文献报道其与免疫调节功能相关；该组同时富集了多个
+Streptococcus 属物种（S. parasanguinis、S. oralis 等），链球菌作为口腔和上呼吸道
+的常见定植菌，其在肠道中的富集可能反映了口-肠微生物轴的某种异常迁移。需要
+
+
+                                -32-
+                      苏州大学本科生毕业设计（论文）
+
+指出的是，本研究中 PD-L1 TPS 分组反映的是肿瘤组织中 PD-L1 的表达水平，而非
+患者对免疫治疗的实际应答状态，二者之间虽有关联但并不等同。
+   属水平与物种水平 LEfSe 结果的分组归属并非完全一致，这一现象值得关注。
+例如，Streptococcus 属在属水平富集于 TPS<1%组，但 S. parasanguinis 和 S. oralis 等
+个别物种在物种水平则富集于 TPS≥50%组；类似地，Ruminococcus_B 属整体富集
+于 TPS 1-49%组，而 R. gnavus 物种则富集于 TPS<1%组。这种跨分类层级的差异性
+并非矛盾，而是反映了同一属内不同物种在不同 TPS 组间的差异性分布。属水平结
+果代表了属内全部物种丰度的综合信号，而物种水平分析则能分辨更精细的生态分
+化。网络分析中 S. hominis 作为度中心性最高的 Hub 物种富集于 TPS<1%组，进一
+步证实了 Streptococcus 属在 TPS<1%组中的主导地位主要由特定高连接度物种所驱
+动。
+   Procrustes 分析（M²=0.560, p=0.001）从整体层面证实了微生物组成与 ARG 谱
+之间的显著关联，说明肠道中“什么菌存在”在很大程度上决定了“什么耐药基因存
+在”。这与微生物组是 ARG 主要载体的生态学理论一致，因为大多数 ARGs 编码在
+细菌的基因组或可移动遗传元件上，细菌群落组成的变化自然会带来 ARG 谱的相应
+改变。同时，M²值为 0.560 也表明两者之间并非完全的一一对应关系，约 44%的
+ARG 变异可以用微生物组成来解释，其余变异可能源于水平基因转移（horizontal
+gene transfer，HGT）的随机性、质粒的独立动态以及环境 ARG 的偶然摄入等因素。
+   功能通路分析揭示的差异模式进一步丰富了对三组间微生物组功能差异的认识。
+TPS<1%组核糖体和翻译通路的系统性上调（Fisher p=5.02×10^-14）是一个突出的发
+现。核糖体是蛋白质合成的分子机器，翻译通路的上调通常反映了微生物群落整体
+蛋白合成活性的升高。一种可能的解释是， TPS<1%组富集的某些物种（如 R.
+gnavus）在炎症环境中处于活跃的增殖状态，需要更高效的蛋白合成来维持其快速
+生长。TPS 1-49%组丁酸代谢通路的上调则可能与该组 Blautia_A 和 Faecalibacterium
+等产 SCFA 菌的富集有关。丁酸作为结肠上皮细胞的主要能源物质，在维持肠道屏
+障完整性和调节 Treg 细胞分化中发挥重要作用[70,75-78]。除短链脂肪酸外，胆汁酸代
+谢物也能调控 Th17/Treg 细胞的分化平衡[79,80]，色氨酸分解代谢产物则通过芳烃受
+体（aryl hydrocarbon receptor，AhR）信号通路维持肠道黏膜免疫稳态[81,82]。
+
+
+                               -33-
+                 苏州大学本科生毕业设计（论文）
+
+  本研究也存在若干不足之处。样本量方面，每组仅 17-18 例，统计效力有限，
+多因素分析也难以充分展开。所有样本均来自单一中心（苏州大学附属第一医院），
+这在一定程度上限制了结果的泛化性。在研究设计上，所有样本采集于单一时间点，
+属于横断面观察，因而无法追踪免疫治疗过程中肠道菌群的动态变化，也无法判断
+PD-L1 TPS 与微生物组特征之间是否存在因果关系。与此同时，饮食习惯、体质指
+数、合并用药等已知影响肠道微生物组成的混杂因素，由于数据不完整未能纳入分
+析。在数据层面上，本研究仅关注了 PD-L1 TPS 与微生物组的关联，尚未整合免疫
+治疗的实际疗效数据（如客观缓解率、无进展生存期），因此无法直接评估微生物
+组特征对 ICI 疗效的预测价值。
+  后续研究可从以下几个方面加以推进。首先，开展前瞻性纵向队列研究，在免
+疫治疗前、中、后多个时间点采集粪便样本，动态追踪肠道微生物组与治疗应答之
+间的关联，同时扩大样本量并纳入多中心数据以提高外部效度。在分析策略上，有
+必要整合饮食、用药和临床应答等协变量信息构建多因素预测模型，并利用宏转录
+组学和代谢组学数据从功能活性（而非仅功能潜力）层面解析微生物-宿主互作。在
+机制验证方面，可针对关键差异物种（如 R. gnavus、Blautia_A sp003471165、
+Eggerthella lenta）开展体外和动物模型的功能验证实验，建立因果关系的直接证据。
+结合膳食纤维和益生菌干预对肠道微生物组和免疫治疗应答影响的最新证据 [83]，以
+及抗生素暴露后肠道菌群重建策略的研究进展[84,85]，也有望为设计针对性的微生物
+组干预方案提供参考。
+
+
+
+
+                        -34-
+                      苏州大学本科生毕业设计（论文）
+
+
+
+                          第 5 章 结论
+
+   本研究通过宏基因组鸟枪法测序对 52 例不同 PD-L1 TPS 表达水平肺癌患者的肠
+道微生物组进行了系统分析。研究发现，α 多样性方面 Pielou 均匀度指数在三组间
+存在显著差异（p=0.037），TPS<1%组的均匀度显著低于其他两组；β 多样性分析
+同样揭示了统计学显著的组间微生物组成结构差异（PERMANOVA p<0.001），表
+明 PD-L1 TPS 分层与肠道微生物群落的物种组成和比例存在关联，尽管效应量较小
+（R²=6.4%）。
+   LEfSe 分析经过滤后在物种和属水平分别鉴定出 21 个和 7 个代表性差异标记物
+（LDA≥2.0），三组各有其特征性标记物种。关键差异物种包括与肠道炎症相关的
+Ruminococcus_B gnavus （ TPS<1% 组 富 集 ） 、 产 短 链 脂 肪 酸 的 Blautia_A
+sp003471165 和 Agathobacter faecis（TPS 1-49%组富集）以及与胆汁酸代谢相关的
+Eggerthella lenta（TPS≥50%组富集），这些物种的功能特征暗示不同 PD-L1 TPS 组
+可能对应不同的肠道免疫微生态状态。微生物共现网络分析揭示了差异物种间以正
+相关为主的模块化互作结构。
+   ARG 分析发现万古霉素和氯霉素耐药基因在 TPS≥50%组显著富集，Procrustes
+分 析 证 实 了 微 生 物 组 成 与 ARG 谱 之 间 的 显 著 关 联 （ M²=0.560, p=0.001 ） 。
+HUMAnN3 功能通路分析鉴定出 68 条差异 KEGG 通路和 117 个差异 GO 条目，呈现
+出组特异性的功能分化模式，其中 TPS<1%组以核糖体/翻译通路上调为特征，TPS
+1-49%组以丁酸代谢通路为特征。
+   综上，本研究从多个层面刻画了不同 PD-L1 TPS 水平肺癌患者肠道微生物组的
+差异，初步揭示了肠道微生物组与肿瘤免疫分层标志物之间的关联。研究结果提示，
+将肠道微生物组特征纳入免疫治疗的疗效评估体系，可能有助于完善基于 PD-L1
+TPS 的患者分层策略，后续可进一步探索针对性的微生物组干预方案。
+
+
+
+
+                               -35-
+                               苏州大学本科生毕业设计（论文）
+
+
+
+                                       参考文献
+
+[1]    Sung H, Ferlay J, Siegel R L, et al. Global cancer statistics 2020: GLOBOCAN
+       estimates of incidence and mortality worldwide for 36 cancers in 185 countries[J].
+       CA Cancer J Clin, 2021, 71(3): 209-249.
+[2]    Bray F, Laversanne M, Sung H, et al. Global cancer statistics 2022: GLOBOCAN
+       estimates of incidence and mortality worldwide for 36 cancers in 185 countries[J].
+       CA Cancer J Clin, 2024, 74(3): 229-263.
+[3]    Siegel R L, Giaquinto A N, Jemal A. Cancer statistics, 2024[J]. CA Cancer J Clin,
+       2024, 74(1): 12-49.
+[4]    Han B F, Zheng R S, Zeng H M, et al. Cancer incidence and mortality in China,
+       2022[J]. J Natl Cancer Cent, 2024, 4(1): 47-53.
+[5]    Herbst R S, Morgensztern D, Boshoff C. The biology and management of non-
+       small cell lung cancer[J]. Nature, 2018, 553(7689): 446-454.
+[6]    Hirsch F R, Scagliotti G V, Mulshine J L, et al. Lung cancer: current therapies and
+       new targeted treatments[J]. Lancet, 2017, 389(10066): 299-311.
+[7]    Thai A A, Solomon B J, Sequist L V, et al. Lung cancer[J]. Lancet, 2021,
+       398(10299): 535-554.
+[8]    Reck M, Rodriguez-Abreu D, Robinson A G, et al. Pembrolizumab versus
+       chemotherapy for PD-L1-positive non-small-cell lung cancer[J]. N Engl J Med,
+       2016, 375(19): 1823-1833.
+[9]    Gandhi L, Rodriguez-Abreu D, Gadgeel S, et al. Pembrolizumab plus
+       chemotherapy in metastatic non-small-cell lung cancer[J]. N Engl J Med, 2018,
+       378(22): 2078-2092.
+[10]   Brahmer J, Reckamp K L, Baas P, et al. Nivolumab versus docetaxel in advanced
+       squamous-cell non-small-cell lung cancer[J]. N Engl J Med, 2015, 373(2): 123-135.
+[11]   Borghaei H, Paz-Ares L, Horn L, et al. Nivolumab versus docetaxel in advanced
+       nonsquamous non-small-cell lung cancer[J]. N Engl J Med, 2015, 373(17): 1627-
+       1639.
+[12]   Herbst R S, Baas P, Kim D W, et al. Pembrolizumab versus docetaxel for
+       previously treated, PD-L1-positive, advanced non-small-cell lung cancer
+       (KEYNOTE-010)[J]. Lancet, 2016, 387(10027): 1540-1550.
+
+                                           -36-
+                               苏州大学本科生毕业设计（论文）
+
+[13]   Rittmeyer A, Barlesi F, Waterkamp D, et al. Atezolizumab versus docetaxel in
+       patients with previously treated non-small-cell lung cancer (OAK)[J]. Lancet, 2017,
+       389(10066): 255-265.
+[14]   Antonia S J, Villegas A, Daniel D, et al. Durvalumab after chemoradiotherapy in
+       stage III non-small-cell lung cancer[J]. N Engl J Med, 2017, 377(20): 1919-1929.
+[15]   Hodi F S, O'Day S J, McDermott D F, et al. Improved survival with ipilimumab in
+       patients with metastatic melanoma[J]. N Engl J Med, 2010, 363(8): 711-723.
+[16]   Robert C, Long G V, Brady B, et al. Nivolumab in previously untreated melanoma
+       without BRAF mutation[J]. N Engl J Med, 2015, 372(4): 320-330.
+[17]   Larkin J, Chiarion-Sileni V, Gonzalez R, et al. Combined nivolumab and
+       ipilimumab or monotherapy in untreated melanoma[J]. N Engl J Med, 2015, 373(1):
+       23-34.
+[18]   Motzer R J, Escudier B, McDermott D F, et al. Nivolumab versus everolimus in
+       advanced renal-cell carcinoma[J]. N Engl J Med, 2015, 373(19): 1803-1813.
+[19]   Bellmunt J, de Wit R, Vaughn D J, et al. Pembrolizumab as second-line therapy for
+       advanced urothelial carcinoma[J]. N Engl J Med, 2017, 376(11): 1015-1026.
+[20]   Ribas A, Wolchok J D. Cancer immunotherapy using checkpoint blockade[J].
+       Science, 2018, 359(6382): 1350-1355.
+[21]   Topalian S L, Hodi F S, Brahmer J R, et al. Safety, activity, and immune correlates
+       of anti-PD-1 antibody in cancer[J]. N Engl J Med, 2012, 366(26): 2443-2454.
+[22]   Sharma P, Allison J P. The future of immune checkpoint therapy[J]. Science, 2015,
+       348(6230): 56-61.
+[23]   Ishida Y, Agata Y, Shibahara K, et al. Induced expression of PD-1, a novel member
+       of the immunoglobulin gene superfamily, upon programmed cell death[J]. EMBO J,
+       1992, 11(11): 3887-3895.
+[24]   Freeman G J, Long A J, Iwai Y, et al. Engagement of the PD-1 immunoinhibitory
+       receptor by a novel B7 family member leads to negative regulation of lymphocyte
+       activation[J]. J Exp Med, 2000, 192(7): 1027-1034.
+[25]   Nishimura H, Nose M, Hiai H, et al. Development of lupus-like autoimmune
+       diseases by disruption of the PD-1 gene encoding an ITIM motif-carrying
+       immunoreceptor[J]. Immunity, 1999, 11(2): 141-151.
+
+
+
+                                           -37-
+                               苏州大学本科生毕业设计（论文）
+
+[26]   Dong H, Strome S E, Salomao D R, et al. Tumor-associated B7-H1 promotes T-cell
+       apoptosis: a potential mechanism of immune evasion[J]. Nat Med, 2002, 8(8): 793-
+       800.
+[27]   Iwai Y, Ishida M, Tanaka Y, et al. Involvement of PD-L1 on tumor cells in the
+       escape from host immune system and tumor immunotherapy by PD-L1 blockade[J].
+       Proc Natl Acad Sci U S A, 2002, 99(19): 12293-12297.
+[28]   Chen D S, Mellman I. Oncology meets immunology: the cancer-immunity cycle[J].
+       Immunity, 2013, 39(1): 1-10.
+[29]   Pardoll D M. The blockade of immune checkpoints in cancer immunotherapy[J].
+       Nat Rev Cancer, 2012, 12(4): 252-264.
+[30]   Leach D R, Krummel M F, Allison J P. Enhancement of antitumor immunity by
+       CTLA-4 blockade[J]. Science, 1996, 271(5256): 1734-1736.
+[31]   Mok T S K, Wu Y L, Kudaba I, et al. Pembrolizumab versus chemotherapy for
+       previously untreated, PD-L1-expressing, locally advanced or metastatic non-small-
+       cell lung cancer (KEYNOTE-042)[J]. Lancet, 2019, 393(10183): 1819-1830.
+[32]   Rizvi N A, Hellmann M D, Snyder A, et al. Mutational landscape determines
+       sensitivity to PD-1 blockade in non-small cell lung cancer[J]. Science, 2015,
+       348(6230): 124-128.
+[33]   Le D T, Uram J N, Wang H, et al. PD-1 blockade in tumors with mismatch-repair
+       deficiency[J]. N Engl J Med, 2015, 372(26): 2509-2520.
+[34]   Sender R, Fuchs S, Milo R. Are we really vastly outnumbered? Revisiting the ratio
+       of bacterial to host cells in humans[J]. Cell, 2016, 164(3): 337-340.
+[35]   Human Microbiome Project Consortium. Structure, function and diversity of the
+       healthy human microbiome[J]. Nature, 2012, 486(7402): 207-214.
+[36]   Qin J, Li R, Raes J, et al. A human gut microbial gene catalogue established by
+       metagenomic sequencing[J]. Nature, 2010, 464(7285): 59-65.
+[37]   Sonnenburg J L, Backhed F. Diet-microbiota interactions as moderators of human
+       metabolism[J]. Nature, 2016, 535(7610): 56-64.
+[38]   Round J L, Mazmanian S K. The gut microbiota shapes intestinal immune
+       responses during health and disease[J]. Nat Rev Immunol, 2009, 9(5): 313-323.
+[39]   Kamada N, Seo S U, Chen G Y, et al. Role of the gut microbiota in immunity and
+       inflammatory disease[J]. Nat Rev Immunol, 2013, 13(5): 321-335.
+
+
+                                            -38-
+                               苏州大学本科生毕业设计（论文）
+
+[40]   Lynch S V, Pedersen O. The human intestinal microbiome in health and disease[J].
+       N Engl J Med, 2016, 375(24): 2369-2379.
+[41]   Cerf-Bensussan N, Gaboriau-Routhiau V. The immune system and the gut
+       microbiota: friends or foes?[J]. Nat Rev Immunol, 2010, 10(10): 735-744.
+[42]   Macpherson A J, Harris N L. Interactions between commensal intestinal bacteria
+       and the immune system[J]. Nat Rev Immunol, 2004, 4(6): 478-485.
+[43]   Mazmanian S K, Liu C H, Tzianabos A O, et al. An immunomodulatory molecule
+       of symbiotic bacteria directs maturation of the host immune system[J]. Cell, 2005,
+       122(1): 107-118.
+[44]   Atarashi K, Tanoue T, Shima T, et al. Induction of colonic regulatory T cells by
+       indigenous Clostridium species[J]. Science, 2011, 331(6015): 337-341.
+[45]   Ivanov I I, Atarashi K, Manel N, et al. Induction of intestinal Th17 cells by
+       segmented filamentous bacteria[J]. Cell, 2009, 139(3): 485-498.
+[46]   Turnbaugh P J, Ley R E, Mahowald M A, et al. An obesity-associated gut
+       microbiome with increased capacity for energy harvest[J]. Nature, 2006, 444(7122):
+       1027-1031.
+[47]   Vetizou M, Pitt J M, Daillere R, et al. Anticancer immunotherapy by CTLA-4
+       blockade relies on the gut microbiota[J]. Science, 2015, 350(6264): 1079-1084.
+[48]   Sivan A, Corrales L, Hubert N, et al. Commensal Bifidobacterium promotes
+       antitumor immunity and facilitates anti-PD-L1 efficacy[J]. Science, 2015,
+       350(6264): 1084-1089.
+[49]   Routy B, Le Chatelier E, Derosa L, et al. Gut microbiome influences efficacy of
+       PD-1-based immunotherapy against epithelial tumors[J]. Science, 2018, 359(6371):
+       91-97.
+[50]   Gopalakrishnan V, Spencer C N, Nezi L, et al. Gut microbiome modulates response
+       to anti-PD-1 immunotherapy in melanoma patients[J]. Science, 2018, 359(6371):
+       97-103.
+[51]   Matson V, Fessler J, Bao R, et al. The commensal microbiome is associated with
+       anti-PD-1 efficacy in metastatic melanoma patients[J]. Science, 2018, 359(6371):
+       104-108.
+
+
+
+
+                                            -39-
+                                苏州大学本科生毕业设计（论文）
+
+[52]   Zitvogel L, Ma Y, Raoult D, et al. The microbiome in cancer immunotherapy:
+       Diagnostic tools and therapeutic strategies[J]. Science, 2018, 359(6382): 1366-
+       1370.
+[53]   Helmink B A, Khan M A W, Hermann A, et al. The microbiome, cancer, and
+       cancer therapy[J]. Nat Med, 2019, 25(3): 377-388.
+[54]   Gopalakrishnan V, Helmink B A, Spencer C N, et al. The influence of the gut
+       microbiome on cancer, immunity, and cancer immunotherapy[J]. Cancer Cell, 2018,
+       33(4): 570-580.
+[55]   Tanoue T, Morita S, Plichta D R, et al. A defined commensal consortium elicits
+       CD8 T cells and anti-cancer immunity[J]. Nature, 2019, 565(7741): 600-605.
+[56]   McCulloch J A, Davar D, Rodrigues R R, et al. Intestinal microbiota signatures of
+       clinical response and immune-related adverse events in melanoma patients treated
+       with anti-PD-1[J]. Nat Med, 2022, 28(3): 545-556.
+[57]   Davar D, Dzutsev A K, McCulloch J A, et al. Fecal microbiota transplant
+       overcomes resistance to anti-PD-1 therapy in melanoma patients[J]. Science, 2021,
+       371(6529): 595-602.
+[58]   Baruch E N, Youngster I, Ben-Betzalel G, et al. Fecal microbiota transplant
+       promotes response in immunotherapy-refractory melanoma patients[J]. Science,
+       2021, 371(6529): 602-609.
+[59]   Jin Y, Dong H, Xia L, et al. The diversity of gut microbiome is associated with
+       favorable responses to anti-programmed death 1 immunotherapy in Chinese
+       patients with NSCLC[J]. J Thorac Oncol, 2019, 14(8): 1378-1389.
+[60]   He D, Li X, An R, et al. Response to PD-1-based immunotherapy for non-small cell
+       lung cancer altered by gut microbiota[J]. Oncol Ther, 2021, 9(2): 647-657.
+[61]   Peng Z, Cheng S, Kou Y, et al. The gut microbiome is associated with clinical
+       response to anti-PD-1/PD-L1 immunotherapy in gastrointestinal cancer[J]. Cancer
+       Immunol Res, 2020, 8(10): 1251-1261.
+[62]   O'Neill J. Tackling drug-resistant infections globally: final report and
+       recommendations[R]. London: Review on Antimicrobial Resistance, 2016.
+[63]   Forslund K, Sunagawa S, Kultima J R, et al. Country-specific antibiotic use
+       practices impact the human gut resistome[J]. Genome Res, 2013, 23(7): 1163-1169.
+
+
+
+                                            -40-
+                                  苏州大学本科生毕业设计（论文）
+
+[64]   van Schaik W. The human gut resistome[J]. Philos Trans R Soc Lond B Biol Sci,
+       2015, 370(1670): 20140087.
+[65]   Derosa L, Hellmann M D, Spaziano M, et al. Negative association of antibiotics on
+       clinical activity of immune checkpoint inhibitors in patients with advanced renal
+       cell and non-small-cell lung cancer[J]. Ann Oncol, 2018, 29(6): 1437-1444.
+[66]   Pinato D J, Howlett S, Ottaviani D, et al. Association of prior antibiotic treatment
+       with survival and response to immune checkpoint inhibitor therapy in patients with
+       cancer[J]. JAMA Oncol, 2019, 5(12): 1774-1778.
+[67]   Yang Y, Jiang X, Chai B, et al. ARGs-OAP: online analysis pipeline for antibiotic
+       resistance genes detection from metagenomic data using an integrated structured
+       ARG-database[J]. Bioinformatics, 2016, 32(15): 2346-2351.
+[68]   Segata N, Izard J, Waldron L, et al. Metagenomic biomarker discovery and
+       explanation[J]. Genome Biol, 2011, 12(6): R60.
+[69]   Beghini F, McIver L J, Blanco-Miguez A, et al. Integrating taxonomic, functional,
+       and strain-level profiling of diverse microbial communities with bioBakery 3[J].
+       Elife, 2021, 10: e65088.
+[70]   Koh A, De Vadder F, Kovatcheva-Datchary P, et al. From dietary fiber to host
+       physiology: short-chain fatty acids as key bacterial metabolites[J]. Cell, 2016,
+       165(6): 1332-1345.
+[71]   Zhernakova A, Kurilshikov A, Bonder M J, et al. Population-based metagenomics
+       analysis reveals markers for gut microbiome composition and diversity[J]. Science,
+       2016, 352(6285): 565-569.
+[72]   Hall A B, Yassour M, Sauk J, et al. A novel Ruminococcus gnavus clade enriched
+       in inflammatory bowel disease patients[J]. Genome Med, 2017, 9(1): 103.
+[73]   Henke M T, Kenny D J, Cassilly C D, et al. Ruminococcus gnavus, a member of
+       the human gut microbiome associated with Crohn's disease, produces an
+       inflammatory polysaccharide[J]. Proc Natl Acad Sci U S A, 2019, 116(26): 12672-
+       12677.
+[74]   Wyres K L, Lam M M C, Holt K E. Population genomics of Klebsiella
+       pneumoniae[J]. Nat Rev Microbiol, 2020, 18(6): 344-359.
+
+
+
+
+                                            -41-
+                               苏州大学本科生毕业设计（论文）
+
+[75]   Furusawa Y, Obata Y, Fukuda S, et al. Commensal microbe-derived butyrate
+       induces the differentiation of colonic regulatory T cells[J]. Nature, 2013, 504(7480):
+       446-450.
+[76]   Arpaia N, Campbell C, Fan X, et al. Metabolites produced by commensal bacteria
+       promote peripheral regulatory T-cell generation[J]. Nature, 2013, 504(7480): 451-
+       455.
+[77]   Smith P M, Howitt M R, Panikov N, et al. The microbial metabolites, short-chain
+       fatty acids, regulate colonic Treg cell homeostasis[J]. Science, 2013, 341(6145):
+       569-573.
+[78]   Tan J, McKenzie C, Potamitis M, et al. The role of short-chain fatty acids in health
+       and disease[J]. Adv Immunol, 2014, 121: 91-119.
+[79]   Hang S, Paik D, Yao L, et al. Bile acid metabolites control TH17 and Treg cell
+       differentiation[J]. Nature, 2019, 576(7785): 143-148.
+[80]   Campbell C, McKenney P T, Konstantinovsky D, et al. Bacterial metabolism of
+       bile acids promotes generation of peripheral regulatory T cells[J]. Nature, 2020,
+       581(7809): 475-479.
+[81]   Agus A, Planchais J, Sokol H. Gut microbiota regulation of tryptophan metabolism
+       in health and disease[J]. Cell Host Microbe, 2018, 23(6): 716-724.
+[82]   Zelante T, Iannitti R G, Cunha C, et al. Tryptophan catabolites from microbiota
+       engage aryl hydrocarbon receptor and balance mucosal reactivity via interleukin-
+       22[J]. Immunity, 2013, 39(2): 372-385.
+[83]   Spencer C N, McQuade J L, Gopalakrishnan V, et al. Dietary fiber and probiotics
+       influence the gut microbiome and melanoma immunotherapy response[J]. Science,
+       2021, 374(6575): 1632-1640.
+[84]   Suez J, Zmora N, Zilberman-Schapira G, et al. Post-antibiotic gut mucosal
+       microbiome reconstitution is impaired by probiotics and improved by autologous
+       FMT[J]. Cell, 2018, 174(6): 1406-1423.
+[85]   Zmora N, Zilberman-Schapira G, Suez J, et al. Personalized gut mucosal
+       colonization resistance to empiric probiotics is associated with unique host and
+       microbiome features[J]. Cell, 2018, 174(6): 1388-1405.
+
+
+
+
+                                           -42-
+

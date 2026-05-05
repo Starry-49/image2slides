@@ -1,0 +1,123 @@
+[
+  {
+    "id": "fig01",
+    "page": 16,
+    "path": "wiki/sources/figures/figure_01_page_16.png",
+    "size": [
+      920,
+      264
+    ],
+    "aspect": 3.485,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig02",
+    "page": 18,
+    "path": "wiki/sources/figures/figure_02_page_18.png",
+    "size": [
+      981,
+      813
+    ],
+    "aspect": 1.207,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig03",
+    "page": 19,
+    "path": "wiki/sources/figures/figure_03_page_19.png",
+    "size": [
+      992,
+      737
+    ],
+    "aspect": 1.346,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig04",
+    "page": 20,
+    "path": "wiki/sources/figures/figure_04_page_20.png",
+    "size": [
+      992,
+      737
+    ],
+    "aspect": 1.346,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig05",
+    "page": 22,
+    "path": "wiki/sources/figures/figure_05_page_22.png",
+    "size": [
+      991,
+      1142
+    ],
+    "aspect": 0.868,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig06",
+    "page": 22,
+    "path": "wiki/sources/figures/figure_06_page_22.png",
+    "size": [
+      991,
+      468
+    ],
+    "aspect": 2.118,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig07",
+    "page": 24,
+    "path": "wiki/sources/figures/figure_07_page_24.png",
+    "size": [
+      975,
+      976
+    ],
+    "aspect": 0.999,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig08",
+    "page": 25,
+    "path": "wiki/sources/figures/figure_08_page_25.png",
+    "size": [
+      999,
+      547
+    ],
+    "aspect": 1.826,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig09",
+    "page": 26,
+    "path": "wiki/sources/figures/figure_09_page_26.png",
+    "size": [
+      999,
+      992
+    ],
+    "aspect": 1.007,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig10",
+    "page": 27,
+    "path": "wiki/sources/figures/figure_10_page_27.png",
+    "size": [
+      991,
+      549
+    ],
+    "aspect": 1.805,
+    "role": "result_data_figure"
+  },
+  {
+    "id": "fig11",
+    "page": 28,
+    "path": "wiki/sources/figures/figure_11_page_28.png",
+    "size": [
+      994,
+      822
+    ],
+    "aspect": 1.209,
+    "role": "result_data_figure"
+  }
+]

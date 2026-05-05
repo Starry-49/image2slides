@@ -1,0 +1,258 @@
+{
+  "version": 1,
+  "created_at": "2026-05-05T00:39:32.768224+00:00",
+  "required_origin": "GPT-image-2 completed reference image, not PPTX/PDF/render screenshot",
+  "generator": "gpt-image-2",
+  "method": "registered_native_image_gen_with_source_locked_patch",
+  "source": "Codex native image_gen GPT-image-2 approved completed batch from thread 019df1fe-085a-7562-8deb-f9e5cecb8001",
+  "note": "Exact source_layers were pasted onto existing image_gen completed/background pairs; no local text composition was used.",
+  "slides": [
+    {
+      "slide": 1,
+      "path": "completed/slide_01_completed.png",
+      "bytes": 1577352,
+      "sha256": "2dace19fe821ca103d46a144dee3643efb69c925e5a45eda20b5e39d8b4753c2",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 2,
+      "path": "completed/slide_02_completed.png",
+      "bytes": 1402099,
+      "sha256": "a83b789be3b75a640f392d7b95dff768aeae168ef4385e5ea24ea86f3991083a",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 3,
+      "path": "completed/slide_03_completed.png",
+      "bytes": 1790133,
+      "sha256": "eead9a7c3046964275b2fb2d431f8c46c450bbfa9d12ac7425ec2e29d12d5c23",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 4,
+      "path": "completed/slide_04_completed.png",
+      "bytes": 1542559,
+      "sha256": "d6dfa6003e44ed95e47db7ed12d00bdba5ec6f05debb08dbe7196004aa050432",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 5,
+      "path": "completed/slide_05_completed.png",
+      "bytes": 1607627,
+      "sha256": "eb8c6167ddfa32442f2da8f25ee81eb2d558433dfeaee8bb8d5e425f938d1b5d",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 6,
+      "path": "completed/slide_06_completed.png",
+      "bytes": 1174929,
+      "sha256": "b92724c36a09ab81f17f314187a5aaed9f2eb75301eac9176e34b0901ef637bd",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 7,
+      "path": "completed/slide_07_completed.png",
+      "bytes": 976722,
+      "sha256": "66a8b401ecebcfb5c7301cf6cb81a458bad4d2279df9c7fed9cfbd85280c1ea7",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 8,
+      "path": "completed/slide_08_completed.png",
+      "bytes": 1211186,
+      "sha256": "f677506404169b1e4f662c41c336e62ead5c8f075b765b1e797086019f031630",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 9,
+      "path": "completed/slide_09_completed.png",
+      "bytes": 1219689,
+      "sha256": "6162d27a9d3bcb42cf05bea415e08703afddbec219f9df7dcbef9a38ac7383fd",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 10,
+      "path": "completed/slide_10_completed.png",
+      "bytes": 1269527,
+      "sha256": "7a25fa072b4d3704106260da31439197d62e01a43ee51acd1a81d4fdebbb7b14",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 11,
+      "path": "completed/slide_11_completed.png",
+      "bytes": 1537524,
+      "sha256": "20c7455c23c5a30aab4706473e16f8faa6445e0cf4cac621dfeac748f9c1564f",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 12,
+      "path": "completed/slide_12_completed.png",
+      "bytes": 1915276,
+      "sha256": "54e1552503cf9ebb9929bca215ed0f9492493b2973b0b2b87e83b02816298e09",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 13,
+      "path": "completed/slide_13_completed.png",
+      "bytes": 1623671,
+      "sha256": "21d41833863eb044849e03817483cd9fe55bed4cf354d9c181f36cbea0a0268d",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 14,
+      "path": "completed/slide_14_completed.png",
+      "bytes": 1323327,
+      "sha256": "6016ecb4c4aa66f1924a05455e590c4534bafc0f77893c4c1cd7e8aee1060665",
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "slide": 15,
+      "path": "completed/slide_15_completed.png",
+      "bytes": 1582849,
+      "sha256": "47b5f0a04a61296c757811052790931930eb63fdca3c34639c0aba378641e37f",
+      "width": 2048,
+      "height": 1152
+    }
+  ],
+  "previous": {
+    "created_at": "2026-05-04T18:10:13.993992+00:00",
+    "method": "registered_native_image_gen",
+    "source": "Codex native image_gen GPT-image-2 approved completed batch from thread 019df1fe-085a-7562-8deb-f9e5cecb8001",
+    "slides": [
+      {
+        "slide": 1,
+        "path": "completed/slide_01_completed.png",
+        "bytes": 1205697,
+        "sha256": "a0c62b3dedeb6ae82f0e3a4698d6224834e6c32533fb7547b64e5752f109215c",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 2,
+        "path": "completed/slide_02_completed.png",
+        "bytes": 1077363,
+        "sha256": "ef5dd3f882f18c7145fa103ce67c91e0335afba8128ec6664d738d76f9ef5109",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 3,
+        "path": "completed/slide_03_completed.png",
+        "bytes": 1338908,
+        "sha256": "1e3c4adb13212ad1cda5d70691baa57f94e42b4c589b5cfcbda878e45c46eb85",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 4,
+        "path": "completed/slide_04_completed.png",
+        "bytes": 1175460,
+        "sha256": "c58fde8c177231ccfd85271c5d55efebb45059a8427e3a02d5f38ac659df8fb0",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 5,
+        "path": "completed/slide_05_completed.png",
+        "bytes": 1215802,
+        "sha256": "ef17037aa75b6bf0cc8c0759a2f2573849fcf4b0326d0830870e2313db057723",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 6,
+        "path": "completed/slide_06_completed.png",
+        "bytes": 934789,
+        "sha256": "a97a21237741cf33d646bed54afaefcfd0a91c7764d2d505add3d327cdb12ee7",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 7,
+        "path": "completed/slide_07_completed.png",
+        "bytes": 897260,
+        "sha256": "e0de610200d61956b362260f41900d7c585ac73f86e5e62aa78c79d6efea2e2b",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 8,
+        "path": "completed/slide_08_completed.png",
+        "bytes": 977920,
+        "sha256": "ab47484c9300de1b4b086dbd92e0b46f5c3c9670205fd47de0c9ca700cb71a1e",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 9,
+        "path": "completed/slide_09_completed.png",
+        "bytes": 871563,
+        "sha256": "4d952a9c96062af50736a1a7571ede29a91469457d274246ca9cb1141ff9d77d",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 10,
+        "path": "completed/slide_10_completed.png",
+        "bytes": 979009,
+        "sha256": "67ff31bbf85b16122a52e5d08d29cac76cb7fe120f25a93dbe4e3775ac0aad87",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 11,
+        "path": "completed/slide_11_completed.png",
+        "bytes": 1270566,
+        "sha256": "9e9bd75e3f367e147778c828c0948ff5cb9759d4fdcd982b96d493770d7d7710",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 12,
+        "path": "completed/slide_12_completed.png",
+        "bytes": 1422203,
+        "sha256": "dd6ec32c23a7b541af84b2c9d7235707da88421971997dbc6d1c1a342d8d2f6e",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 13,
+        "path": "completed/slide_13_completed.png",
+        "bytes": 1230240,
+        "sha256": "04254619fe5ea3faf0df2fae25b1e7f343d546cea22769d09b0ef92b33513463",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 14,
+        "path": "completed/slide_14_completed.png",
+        "bytes": 1022439,
+        "sha256": "19f31f88bccbfad90f477637e5119d15cf3a699f57dd544e826d86dc4923ed63",
+        "width": 1672,
+        "height": 941
+      },
+      {
+        "slide": 15,
+        "path": "completed/slide_15_completed.png",
+        "bytes": 1205465,
+        "sha256": "63360adbebc84aad1a714d61b094ca93a3b25d25599372965c89daaf82ea9abc",
+        "width": 1672,
+        "height": 941
+      }
+    ]
+  }
+}

@@ -69,38 +69,54 @@ Use [examples/spec.example.json](./examples/spec.example.json) as the starting s
    - `prompts/completed_prompts.jsonl`
    - `prompts/background_edit_prompts.jsonl`
 
-4. Generate GPT-image-2 visual bases with Codex native `image_gen`.
-
-   The default plugin workflow uses Codex native image generation, so it does not require `OPENAI_API_KEY`. Copy each generated text-free visual base into:
-
-   - `tmp/native_imagegen/slide_XX_base.png`
-
-   For source-locked data/results, keep original figures in `wiki/sources/` and compose them onto the generated bases:
+   `queue` first normalizes source-layer panels so each panel bbox follows the trimmed source figure aspect ratio plus the configured inset margin. You can check or apply that step explicitly with:
 
    ```bash
-   image2slides compose-source-locked --project decks/my-deck --base-dir tmp/native_imagegen
+   image2slides normalize-source-panels --project decks/my-deck --check --strict
+   image2slides normalize-source-panels --project decks/my-deck
+   ```
+
+4. Generate GPT-image-2 completed slide references with Codex native `image_gen`.
+
+   The default plugin workflow uses Codex native image generation, so it does not require `OPENAI_API_KEY`. Each `completed/slide_XX_completed.png` must be a GPT-image-2 full-slide reference with the intended visible text. Never fill `completed/` from PPTX/PDF renders, local screenshots, or deterministic drawing output. After copying native image_gen outputs into `completed/`, register them:
+
+   ```bash
+   image2slides register-completed --project decks/my-deck
+   ```
+
+5. Generate text-free backgrounds by editing each completed slide.
+
+   The background pass uses GPT-image-2 edit and removes only text, keeping layout, graphics, color, and geometry aligned with `completed/`. After native image_gen edit outputs are copied into `background/`, register them so downstream steps can prove they are text-free edits of the current completed batch:
+
+   ```bash
+   image2slides imagegen --project decks/my-deck --phase background --dry-run
+   image2slides imagegen --project decks/my-deck --phase background --execute
+   image2slides register-background --project decks/my-deck
+   ```
+
+   For source-locked data/results, keep original figures in `wiki/sources/` and patch exact trimmed source figures into the existing image_gen completed/background pair:
+
+   ```bash
+   image2slides compose-source-locked --project decks/my-deck
    image2slides audit-layout --project decks/my-deck --strict
    ```
 
-   Results land in `completed/slide_XX_completed.png` and `background/slide_XX_background.png`.
-   The layout audit verifies that source figures stay inside detected/native panels, do not overlap editable text, and do not add duplicate rounded frames over native imagegen panels.
-   Source fitting trims blank pixels, asks GPT-image-2 to reserve panels whose proportions match source images, detects the actual panel edge on generated bases, insets that panel by `fit_margin_px`, maximizes scale under the four parallel-edge constraints, then center-aligns the image inside that inset panel.
+   Results land in `background/slide_XX_background.png` plus `background/.image2slides_background_provenance.json`. The background prompt requires the only difference from `completed/` to be removed text; layout, graphics, color, and geometry must remain aligned. `analyze`, `build-pptx`, `compose-source-locked`, and `qa` reject unregistered local templates, screenshots, deterministic drawings, stale backgrounds, or background batches not tied to the current completed provenance.
+   The layout audit verifies that source figures stay inside detected/native panels, panel inset ratios match trimmed source figure ratios, source panels/images do not overlap each other or editable text, figure-first slides keep figures visually dominant over supporting text, and duplicate rounded frames are not added over native imagegen panels.
+   Source fitting trims blank pixels, asks GPT-image-2 to reserve panels whose proportions match source images, detects the actual panel edge on generated bases or backgrounds, insets that panel by `fit_margin_px`, maximizes scale under the four parallel-edge constraints, then center-aligns the image inside that inset panel.
 
-5. Optional API CLI fallback:
+   Figure-first standard:
+   - keep exact source panels for result/data figures whose plotted values must remain unchanged
+   - do not reserve panels for decorative diagrams, icons, or text-heavy screenshots when their text can be extracted
+   - use less text; text should explain how to read the figure, not compete with it
+   - split crowded multi-figure messages into more slides instead of shrinking every figure
+
+   Optional API/SDK fallback for completed generation is available only when explicitly requested:
 
    ```bash
    image2slides imagegen --project decks/my-deck --phase completed --dry-run
    image2slides imagegen --project decks/my-deck --phase completed --execute
    ```
-
-   Generate text-free backgrounds by editing each completed slide:
-
-   ```bash
-   image2slides imagegen --project decks/my-deck --phase background --dry-run
-   image2slides imagegen --project decks/my-deck --phase background --execute
-   ```
-
-   Results land in `background/slide_XX_background.png`. The background prompt requires the only difference from `completed/` to be removed text; layout, graphics, color, and geometry must remain aligned.
 
 6. Analyze text and blank regions:
 
@@ -136,8 +152,11 @@ Use [examples/spec.example.json](./examples/spec.example.json) as the starting s
    - `reports/qa_similarity.json`
    - `reports/qa_report.md`
    - `reports/source_layer_audit.md`
+   - `reports/background_audit.md`
 
-   QA renders the PPTX locally when LibreOffice and `pdftoppm` are available, compares rendered slides with `completed/` using pixel and patch similarity, and repeats the fixed source-layer layout audit.
+   QA re-renders the PPTX locally when LibreOffice and `pdftoppm` are available, compares rendered slides with `completed/` using pixel and patch similarity, repeats the fixed source-layer layout audit, and fails strict mode on byte-identical or visually near-identical background pages. The default strict similarity preset requires overall pixel similarity >= 0.90 while allowing expected font rasterization differences between GPT-image-2 reference text and editable PowerPoint text. Stale rendered screenshots are cleared before each render.
+
+If a stage deviates from this order, delete every downstream artifact from the first invalid stage and restart from the last valid checkpoint. For example, invalid `completed/` means rerun completed, background, analysis, PPTX, and QA; invalid `background/` means rerun background, analysis, PPTX, and QA.
 
 9. Do a brief human detail check.
 

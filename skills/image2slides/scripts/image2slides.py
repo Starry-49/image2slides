@@ -9,6 +9,7 @@ similarity reports.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import math
@@ -62,6 +63,42 @@ PROJECT_DIRS = (
 
 EMU_PER_INCH = 914400
 DEFAULT_PANEL_MARGIN_PX = 32
+DEFAULT_PANEL_ASPECT_TOLERANCE = 0.04
+DEFAULT_FIGURE_FIRST_MIN_SOURCE_AREA = 0.26
+DEFAULT_FIGURE_FIRST_MIN_SOURCE_TEXT_RATIO = 1.15
+DEFAULT_FIGURE_FIRST_MAX_TEXT_CHARS = 140
+COMPLETED_PROVENANCE = ".image2slides_completed_provenance.json"
+BACKGROUND_PROVENANCE = ".image2slides_background_provenance.json"
+COMPLETED_ALLOWED_METHODS = {
+    "native_image_gen",
+    "api_imagegen_cli",
+    "registered_native_image_gen",
+    "native_image_gen_with_source_locked_patch",
+    "api_imagegen_cli_with_source_locked_patch",
+    "registered_native_image_gen_with_source_locked_patch",
+    "test_image_gen_fixture",
+    "test_image_gen_fixture_with_source_locked_patch",
+}
+BACKGROUND_ALLOWED_METHODS = {
+    "native_image_gen_edit",
+    "api_imagegen_cli_edit",
+    "registered_native_image_gen_edit",
+    "native_image_gen_edit_with_source_locked_patch",
+    "api_imagegen_cli_edit_with_source_locked_patch",
+    "registered_native_image_gen_edit_with_source_locked_patch",
+    "test_image_gen_edit_fixture",
+    "test_image_gen_edit_fixture_with_source_locked_patch",
+}
+COMPLETED_FORBIDDEN_SOURCE_MARKERS = (
+    "pptx",
+    "powerpoint export",
+    "render",
+    "rendered",
+    "screenshot",
+    "reports/rendered",
+    "libreoffice",
+    "soffice",
+)
 
 XMLNS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -99,6 +136,21 @@ def write_json(path: Path, value: Any) -> None:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def project_relative(project: Path, path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(project.resolve()))
+    except ValueError:
+        return str(path)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def normalize_purpose(value: Any) -> str:
@@ -234,6 +286,221 @@ def project_file(project: Path) -> Path:
 
 def load_project(project: Path) -> Dict[str, Any]:
     return read_json(project_file(project))
+
+
+def completed_provenance_path(project: Path) -> Path:
+    return project / "completed" / COMPLETED_PROVENANCE
+
+
+def background_provenance_path(project: Path) -> Path:
+    return project / "background" / BACKGROUND_PROVENANCE
+
+
+def completed_image_path(project: Path, slide_no: int) -> Path:
+    return project / "completed" / f"slide_{slide_no:02d}_completed.png"
+
+
+def background_image_path(project: Path, slide_no: int) -> Path:
+    return project / "background" / f"slide_{slide_no:02d}_background.png"
+
+
+def expected_slide_numbers(spec: Dict[str, Any]) -> List[int]:
+    return list(range(1, int(spec["slide_count"]) + 1))
+
+
+def image_record(project: Path, path: Path, slide_no: int) -> Dict[str, Any]:
+    record: Dict[str, Any] = {
+        "slide": slide_no,
+        "path": project_relative(project, path),
+        "bytes": path.stat().st_size,
+        "sha256": sha256_file(path),
+    }
+    if Image is not None:
+        try:
+            with Image.open(path) as image:
+                record["width"] = image.width
+                record["height"] = image.height
+        except Exception:
+            pass
+    return record
+
+
+def provenance_source_is_forbidden(value: Any) -> bool:
+    raw = str(value or "").replace("\\", "/").lower()
+    return any(marker in raw for marker in COMPLETED_FORBIDDEN_SOURCE_MARKERS)
+
+
+def write_completed_provenance(
+    project: Path,
+    spec: Dict[str, Any],
+    *,
+    method: str,
+    source: str,
+    note: str = "",
+    previous: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    if method not in COMPLETED_ALLOWED_METHODS:
+        die(f"Unsupported completed provenance method: {method}")
+    if provenance_source_is_forbidden(source) or provenance_source_is_forbidden(method):
+        die("completed provenance cannot point to PPTX/rendered/exported screenshot sources")
+
+    entries = []
+    for slide_no in expected_slide_numbers(spec):
+        path = completed_image_path(project, slide_no)
+        if not path.exists():
+            die(f"Cannot register completed provenance; missing image_gen completed file: {path}")
+        entries.append(image_record(project, path, slide_no))
+
+    manifest: Dict[str, Any] = {
+        "version": 1,
+        "created_at": now_iso(),
+        "required_origin": "GPT-image-2 completed reference image, not PPTX/PDF/render screenshot",
+        "generator": "gpt-image-2",
+        "method": method,
+        "source": source,
+        "note": note,
+        "slides": entries,
+    }
+    if previous:
+        manifest["previous"] = {
+            "created_at": previous.get("created_at"),
+            "method": previous.get("method"),
+            "source": previous.get("source"),
+            "slides": previous.get("slides", []),
+        }
+    write_json(completed_provenance_path(project), manifest)
+    return manifest
+
+
+def write_background_provenance(
+    project: Path,
+    spec: Dict[str, Any],
+    *,
+    method: str,
+    source: str,
+    note: str = "",
+    previous: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    if method not in BACKGROUND_ALLOWED_METHODS:
+        die(f"Unsupported background provenance method: {method}")
+    if provenance_source_is_forbidden(source) or provenance_source_is_forbidden(method):
+        die("background provenance cannot point to PPTX/rendered/exported screenshot sources")
+    completed_manifest = validate_completed_provenance(project, spec)
+    completed_manifest_hash = sha256_file(completed_provenance_path(project))
+
+    entries = []
+    for slide_no in expected_slide_numbers(spec):
+        path = background_image_path(project, slide_no)
+        if not path.exists():
+            die(f"Cannot register background provenance; missing GPT-image-2 background edit file: {path}")
+        entries.append(image_record(project, path, slide_no))
+
+    manifest: Dict[str, Any] = {
+        "version": 1,
+        "created_at": now_iso(),
+        "required_origin": "GPT-image-2 text-free edit from the matching completed reference, not a local template or screenshot",
+        "generator": "gpt-image-2",
+        "method": method,
+        "source": source,
+        "note": note,
+        "completed_provenance_sha256": completed_manifest_hash,
+        "completed_method": completed_manifest.get("method"),
+        "slides": entries,
+    }
+    if previous:
+        manifest["previous"] = {
+            "created_at": previous.get("created_at"),
+            "method": previous.get("method"),
+            "source": previous.get("source"),
+            "slides": previous.get("slides", []),
+        }
+    write_json(background_provenance_path(project), manifest)
+    return manifest
+
+
+def load_completed_provenance(project: Path) -> Dict[str, Any]:
+    path = completed_provenance_path(project)
+    if not path.exists():
+        die(
+            "Missing completed image provenance. `completed/` must come from GPT-image-2 image_gen, "
+            "not PPTX/PDF/render screenshots. Run `image2slides imagegen --phase completed --execute` "
+            "or register native image_gen outputs with `image2slides register-completed`."
+        )
+    return read_json(path)
+
+
+def load_background_provenance(project: Path) -> Dict[str, Any]:
+    path = background_provenance_path(project)
+    if not path.exists():
+        die(
+            "Missing background image provenance. `background/` must come from GPT-image-2 text-free edits "
+            "of `completed/`, not local templates, screenshots, or deterministic drawing. Run native image_gen "
+            "background edits and register them with `image2slides register-background`."
+        )
+    return read_json(path)
+
+
+def validate_completed_provenance(project: Path, spec: Dict[str, Any]) -> Dict[str, Any]:
+    manifest = load_completed_provenance(project)
+    if manifest.get("generator") != "gpt-image-2":
+        die("completed provenance must declare generator `gpt-image-2`")
+    method = str(manifest.get("method", ""))
+    source = str(manifest.get("source", ""))
+    if method not in COMPLETED_ALLOWED_METHODS:
+        die(f"completed provenance method is not an accepted image_gen method: {method}")
+    if provenance_source_is_forbidden(source) or provenance_source_is_forbidden(method):
+        die("completed provenance points to a PPTX/render/PDF screenshot path, which is forbidden")
+
+    entries = {int(item.get("slide")): item for item in manifest.get("slides", []) if item.get("slide") is not None}
+    for slide_no in expected_slide_numbers(spec):
+        path = completed_image_path(project, slide_no)
+        if not path.exists():
+            die(f"Missing image_gen completed reference: {path}")
+        entry = entries.get(slide_no)
+        if not entry:
+            die(f"completed provenance is missing slide {slide_no:02d}")
+        if project_relative(project, path) != str(entry.get("path")):
+            die(f"completed provenance path mismatch for slide {slide_no:02d}")
+        current_hash = sha256_file(path)
+        if current_hash != entry.get("sha256"):
+            die(
+                f"completed image changed after provenance registration for slide {slide_no:02d}; "
+                "rerun image_gen or re-register only genuine image_gen output"
+            )
+    return manifest
+
+
+def validate_background_provenance(project: Path, spec: Dict[str, Any]) -> Dict[str, Any]:
+    validate_completed_provenance(project, spec)
+    manifest = load_background_provenance(project)
+    if manifest.get("generator") != "gpt-image-2":
+        die("background provenance must declare generator `gpt-image-2`")
+    method = str(manifest.get("method", ""))
+    source = str(manifest.get("source", ""))
+    if method not in BACKGROUND_ALLOWED_METHODS:
+        die(f"background provenance method is not an accepted image_gen edit method: {method}")
+    if provenance_source_is_forbidden(source) or provenance_source_is_forbidden(method):
+        die("background provenance points to a PPTX/render/PDF screenshot path, which is forbidden")
+    completed_hash = sha256_file(completed_provenance_path(project))
+    if manifest.get("completed_provenance_sha256") != completed_hash:
+        die("background provenance is not tied to the current completed provenance; regenerate background edits")
+
+    entries = {int(item.get("slide")): item for item in manifest.get("slides", []) if item.get("slide") is not None}
+    for slide_no in expected_slide_numbers(spec):
+        path = background_image_path(project, slide_no)
+        if not path.exists():
+            die(f"Missing GPT-image-2 background edit: {path}")
+        entry = entries.get(slide_no)
+        if not entry:
+            die(f"background provenance is missing slide {slide_no:02d}")
+        if project_relative(project, path) != str(entry.get("path")):
+            die(f"background provenance path mismatch for slide {slide_no:02d}")
+        if sha256_file(path) != entry.get("sha256"):
+            die(
+                f"background image changed after provenance registration for slide {slide_no:02d}; "
+                "rerun image_gen background edit or re-register only genuine image_gen output"
+            )
+    return manifest
 
 
 def write_project_docs(project: Path, spec: Dict[str, Any]) -> None:
@@ -930,6 +1197,55 @@ def source_layout_instructions(project: Path, spec: Dict[str, Any], slide: Dict[
     return "".join(lines)
 
 
+def source_size_for_layer(
+    project: Path,
+    layer: Dict[str, Any],
+    fallback_size: Tuple[int, int],
+    *,
+    draw_frame: bool = False,
+) -> Tuple[int, int]:
+    source_path = resolve_project_path(project, str(layer.get("path", "")))
+    if source_path.exists() and Image is not None:
+        try:
+            return source_image_for_layer(source_path, layer, draw_frame=draw_frame).size
+        except Exception:
+            return fallback_size
+    return fallback_size
+
+
+def normalize_source_panels(project: Path, *, write: bool = True) -> int:
+    """Rewrite source-layer panel boxes so the panel itself matches trimmed source aspect."""
+    require_image_libs()
+    spec = load_project(project)
+    width, height = parse_image_size(spec["image_size"])
+    plan_path = project / "wiki/04_slide_plan.json"
+    plan = read_json(plan_path)
+    changed = 0
+    for slide in plan.get("slides", []):
+        for layer in slide.get("source_layers", []):
+            if not panel_aspect_from_source(layer):
+                continue
+            declared = layer_panel_box(layer, width, height)
+            margin = layer_margin_px(layer, has_panel=bool(layer.get("panel_bbox")))
+            fallback = (max(1, declared[2] - declared[0]), max(1, declared[3] - declared[1]))
+            draw_frame = bool_option(layer.get("draw_frame"), False)
+            source_size = source_size_for_layer(project, layer, fallback, draw_frame=draw_frame)
+            adjusted = clamp_box(aspect_adjusted_panel_box(declared, source_size, margin), width, height)
+            if adjusted == declared:
+                continue
+            x0, y0, x1, y1 = pixels_to_unit_rect(adjusted, width, height)
+            layer["panel_bbox"] = [
+                round(x0, 5),
+                round(y0, 5),
+                round(x1 - x0, 5),
+                round(y1 - y0, 5),
+            ]
+            changed += 1
+    if changed and write:
+        write_json(plan_path, plan)
+    return changed
+
+
 def load_base_background(project: Path, raw_base_dir: Optional[str], slide_no: int, size: Tuple[int, int], fallback_color: Tuple[int, int, int]) -> "Image.Image":
     if not raw_base_dir:
         return Image.new("RGB", size, fallback_color)
@@ -982,22 +1298,29 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
     require_image_libs()
     project = Path(args.project).resolve()
     spec = load_project(project)
+    previous_provenance = validate_completed_provenance(project, spec)
+    previous_background_provenance = validate_background_provenance(project, spec)
     plan = slide_plan(project)
     width, height = parse_image_size(spec["image_size"])
-    bg_dir = project / "background"
-    completed_dir = project / "completed"
-    bg_dir.mkdir(parents=True, exist_ok=True)
-    completed_dir.mkdir(parents=True, exist_ok=True)
 
     for slide in plan.get("slides", []):
         slide_no = int(slide["slide"])
-        background_color = rgb(str(slide.get("background_color", "#fbfcfe")), "#fbfcfe")
-        base_background = load_base_background(project, args.base_dir, slide_no, (width, height), background_color)
-        background = base_background.copy()
-        draw = ImageDraw.Draw(background)  # type: ignore[name-defined]
-        accent = rgb(str(slide.get("accent_color", "#2f80ed")), "#2f80ed")
-        if slide.get("draw_accent", True):
-            draw.rectangle((0, 0, width, max(8, int(height * 0.017))), fill=accent)
+        completed_path = completed_image_path(project, slide_no)
+        background_path = background_image_path(project, slide_no)
+        if not completed_path.exists():
+            die(f"Missing GPT-image-2 completed reference: {completed_path}")
+        if not background_path.exists():
+            die(
+                f"Missing GPT-image-2 background edit: {background_path}. "
+                "Run `image2slides imagegen --phase background --execute` before source locking."
+            )
+        completed = Image.open(completed_path).convert("RGB")
+        background = Image.open(background_path).convert("RGB")
+        if completed.size != (width, height):
+            completed = completed.resize((width, height), Image.Resampling.LANCZOS)
+        if background.size != (width, height):
+            background = background.resize((width, height), Image.Resampling.LANCZOS)
+        panel_reference = load_native_panel_reference(project, slide_no, (width, height)) or background
 
         for layer in slide.get("source_layers", []):
             raw_path = str(layer.get("path", "")).strip()
@@ -1006,40 +1329,87 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
             source_path = resolve_project_path(project, raw_path)
             if not source_path.exists():
                 die(f"source layer not found for slide {slide_no}: {source_path}")
-            draw_frame = bool_option(layer.get("draw_frame"), args.base_dir is None)
+            draw_frame = bool_option(layer.get("draw_frame"), False)
             geometry = source_fit_geometry(
                 project,
                 layer,
                 (width, height),
                 draw_frame=draw_frame,
-                panel_image=base_background if args.base_dir else None,
+                panel_image=panel_reference,
             )
             box = geometry["panel_box"]
             radius = int(layer.get("radius_px", 24))
             if draw_frame:
-                draw.rounded_rectangle(box, radius=radius, fill=(255, 255, 255), outline=rgb("#d9e3ef"), width=2)
+                for image in (completed, background):
+                    draw = ImageDraw.Draw(image)  # type: ignore[name-defined]
+                    draw.rounded_rectangle(box, radius=radius, fill=(255, 255, 255), outline=rgb("#d9e3ef"), width=2)
+            paste_source_image(
+                completed,
+                project,
+                source_path,
+                layer,
+                canvas_backed=draw_frame,
+                panel_image=panel_reference,
+                geometry=geometry,
+            )
             paste_source_image(
                 background,
                 project,
                 source_path,
                 layer,
                 canvas_backed=draw_frame,
-                panel_image=base_background if args.base_dir else None,
+                panel_image=panel_reference,
                 geometry=geometry,
             )
 
-        completed = background.copy()
-        draw_text_items(completed, slide)
-        background.save(bg_dir / f"slide_{slide_no:02d}_background.png")
-        completed.save(completed_dir / f"slide_{slide_no:02d}_completed.png")
+        completed.save(completed_path)
+        background.save(background_path)
 
-    print(f"Wrote source-locked backgrounds to {bg_dir}")
-    print(f"Wrote completed references to {completed_dir}")
+    previous_method = str(previous_provenance.get("method"))
+    patch_methods = {
+        "api_imagegen_cli": "api_imagegen_cli_with_source_locked_patch",
+        "registered_native_image_gen": "registered_native_image_gen_with_source_locked_patch",
+        "test_image_gen_fixture": "test_image_gen_fixture_with_source_locked_patch",
+    }
+    patched_method = patch_methods.get(previous_method, "native_image_gen_with_source_locked_patch")
+    write_completed_provenance(
+        project,
+        spec,
+        method=patched_method,
+        source=str(previous_provenance.get("source", "image_gen completed references")),
+        note="Exact source_layers were pasted onto existing image_gen completed/background pairs; no local text composition was used.",
+        previous=previous_provenance,
+    )
+    previous_background_method = str(previous_background_provenance.get("method"))
+    background_patch_methods = {
+        "api_imagegen_cli_edit": "api_imagegen_cli_edit_with_source_locked_patch",
+        "registered_native_image_gen_edit": "registered_native_image_gen_edit_with_source_locked_patch",
+        "test_image_gen_edit_fixture": "test_image_gen_edit_fixture_with_source_locked_patch",
+    }
+    patched_background_method = background_patch_methods.get(
+        previous_background_method,
+        "native_image_gen_edit_with_source_locked_patch",
+    )
+    write_background_provenance(
+        project,
+        spec,
+        method=patched_background_method,
+        source=str(previous_background_provenance.get("source", "image_gen background edits")),
+        note="Exact source_layers were pasted onto existing GPT-image-2 background edits; no local template background was substituted.",
+        previous=previous_background_provenance,
+    )
+
+    print(f"Patched source-locked figures into existing image_gen completed/background pairs")
+    print(f"Wrote completed provenance to {completed_provenance_path(project)}")
+    print(f"Wrote background provenance to {background_provenance_path(project)}")
 
 
 def cmd_queue(args: argparse.Namespace) -> None:
     project = Path(args.project).resolve()
     spec = load_project(project)
+    normalized = normalize_source_panels(project)
+    if normalized:
+        print(f"Normalized {normalized} source-layer panel bbox(es) to trimmed source aspect")
     slides = slide_plan(project)["slides"]
     completed_path = project / "prompts/completed_prompts.jsonl"
     background_path = project / "prompts/background_edit_prompts.jsonl"
@@ -1069,6 +1439,17 @@ def cmd_queue(args: argparse.Namespace) -> None:
             handle.write(json.dumps(job, ensure_ascii=False) + "\n")
     print(f"Wrote {completed_path}")
     print(f"Wrote {background_path}")
+
+
+def cmd_normalize_source_panels(args: argparse.Namespace) -> None:
+    project = Path(args.project).resolve()
+    changed = normalize_source_panels(project, write=not args.check)
+    if args.check:
+        print(f"Source-layer panel bbox(es) needing normalization: {changed}")
+        if args.strict and changed:
+            die(f"{changed} source-layer panel bbox(es) do not match trimmed source aspect")
+        return
+    print(f"Normalized {changed} source-layer panel bbox(es) to trimmed source aspect")
 
 
 def default_imagegen_cli() -> Path:
@@ -1120,6 +1501,15 @@ def cmd_imagegen(args: argparse.Namespace) -> None:
         if args.dry_run:
             command.append("--dry-run")
         run_command(command, dry_run=False)
+        if not args.dry_run:
+            write_completed_provenance(
+                project,
+                spec,
+                method="api_imagegen_cli",
+                source="image2slides imagegen --phase completed --execute",
+                note="Generated by GPT-image-2 through the imagegen CLI fallback.",
+            )
+            print(f"Wrote {completed_provenance_path(project)}")
         return
 
     jobs = [
@@ -1127,6 +1517,7 @@ def cmd_imagegen(args: argparse.Namespace) -> None:
         for line in (project / "prompts/background_edit_prompts.jsonl").read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
+    validate_completed_provenance(project, spec)
     for job in jobs:
         prompt_file = project / "tmp/imagegen" / f"slide_{int(job['slide']):02d}_background_prompt.txt"
         prompt_file.write_text(job["prompt"], encoding="utf-8")
@@ -1156,6 +1547,41 @@ def cmd_imagegen(args: argparse.Namespace) -> None:
             print(json.dumps({"command": command, "note": "completed image missing; command preview only"}, ensure_ascii=False))
             continue
         run_command(command, dry_run=False)
+    if not args.dry_run:
+        write_background_provenance(
+            project,
+            spec,
+            method="api_imagegen_cli_edit",
+            source="image2slides imagegen --phase background --execute",
+            note="Generated by GPT-image-2 edit from completed references through the imagegen CLI fallback.",
+        )
+        print(f"Wrote {background_provenance_path(project)}")
+
+
+def cmd_register_completed(args: argparse.Namespace) -> None:
+    project = Path(args.project).resolve()
+    spec = load_project(project)
+    write_completed_provenance(
+        project,
+        spec,
+        method=args.method,
+        source=args.source,
+        note=args.note,
+    )
+    print(f"Wrote {completed_provenance_path(project)}")
+
+
+def cmd_register_background(args: argparse.Namespace) -> None:
+    project = Path(args.project).resolve()
+    spec = load_project(project)
+    write_background_provenance(
+        project,
+        spec,
+        method=args.method,
+        source=args.source,
+        note=args.note,
+    )
+    print(f"Wrote {background_provenance_path(project)}")
 
 
 def color_hex(rgb: Sequence[int]) -> str:
@@ -1324,6 +1750,8 @@ def analyze_pair(completed_path: Path, background_path: Path, *, threshold: int,
 def cmd_analyze(args: argparse.Namespace) -> None:
     project = Path(args.project).resolve()
     spec = load_project(project)
+    validate_completed_provenance(project, spec)
+    validate_background_provenance(project, spec)
     results = []
     for i in range(1, int(spec["slide_count"]) + 1):
         completed = project / "completed" / f"slide_{i:02d}_completed.png"
@@ -1406,7 +1834,7 @@ def text_box_xml(shape_id: int, text: str, bbox: Sequence[float], slide_w: float
           <a:xfrm><a:off x="{emu(x)}" y="{emu(y)}"/><a:ext cx="{emu(w)}" cy="{emu(h)}"/></a:xfrm>
           <a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>
         </p:spPr>
-        <p:txBody><a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="mid"><a:spAutoFit/></a:bodyPr><a:lstStyle/>{body}</p:txBody>
+        <p:txBody><a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t"><a:noAutofit/></a:bodyPr><a:lstStyle/>{body}</p:txBody>
       </p:sp>
 """
 
@@ -1550,6 +1978,8 @@ def image_extension(path: Path) -> str:
 
 def build_pptx(project: Path, out_path: Path) -> None:
     spec = load_project(project)
+    validate_completed_provenance(project, spec)
+    validate_background_provenance(project, spec)
     plan = slide_plan(project)
     lint_report = lint_visible_text(project)
     write_lint_report(project, lint_report)
@@ -1659,6 +2089,11 @@ def cmd_render(args: argparse.Namespace) -> None:
         die("LibreOffice/soffice is required for render.")
     if not pdftoppm:
         die("pdftoppm is required for render.")
+    for stale in [out_dir / (pptx.stem + ".pdf"), *out_dir.glob("slide-*.png"), *out_dir.glob("slide-*.ppm")]:
+        try:
+            stale.unlink()
+        except FileNotFoundError:
+            pass
     subprocess.run([soffice, "--headless", "--convert-to", "pdf", "--outdir", str(out_dir), str(pptx)], check=True)
     pdf = out_dir / (pptx.stem + ".pdf")
     if not pdf.exists():
@@ -1683,7 +2118,9 @@ def compare_images(a_path: Path, b_path: Path, max_width: int = 768) -> Dict[str
         b = b.resize((max_width, height), Image.Resampling.BILINEAR)
     arr_a = np.asarray(a).astype(np.float32)
     arr_b = np.asarray(b).astype(np.float32)
-    mae = float(np.abs(arr_a - arr_b).mean())
+    diff = np.abs(arr_a - arr_b)
+    diff_luma = diff.mean(axis=2)
+    mae = float(diff.mean())
     pixel_similarity = max(0.0, 1.0 - mae / 255.0)
 
     patch_scores = []
@@ -1700,11 +2137,90 @@ def compare_images(a_path: Path, b_path: Path, max_width: int = 768) -> Dict[str
                     continue
                 patch_mae = float(np.abs(pa.mean(axis=(0, 1)) - pb.mean(axis=(0, 1))).mean())
                 patch_scores.append(max(0.0, 1.0 - patch_mae / 255.0))
+    detail_patch_mae: List[float] = []
+    for rows, cols in [(12, 20)]:
+        for r in range(rows):
+            for c in range(cols):
+                y0 = int(round(r * diff_luma.shape[0] / rows))
+                y1 = int(round((r + 1) * diff_luma.shape[0] / rows))
+                x0 = int(round(c * diff_luma.shape[1] / cols))
+                x1 = int(round((c + 1) * diff_luma.shape[1] / cols))
+                patch = diff_luma[y0:y1, x0:x1]
+                if patch.size:
+                    detail_patch_mae.append(float(patch.mean()))
+    detail_patch_array = np.asarray(detail_patch_mae, dtype=np.float32) if detail_patch_mae else np.asarray([0.0])
     return {
         "pixel_similarity": round(pixel_similarity, 5),
         "patch_similarity": round(float(sum(patch_scores) / len(patch_scores)), 5) if patch_scores else None,
         "mae": round(mae, 3),
+        "diff_p95": round(float(np.percentile(diff_luma, 95)), 3),
+        "diff_p99": round(float(np.percentile(diff_luma, 99)), 3),
+        "bad_pixel_ratio_32": round(float((diff_luma > 32).mean()), 5),
+        "bad_pixel_ratio_64": round(float((diff_luma > 64).mean()), 5),
+        "detail_patch_mae_p90": round(float(np.percentile(detail_patch_array, 90)), 3),
+        "detail_patch_mae_max": round(float(detail_patch_array.max()), 3),
+        "detail_bad_patch_ratio_32": round(float((detail_patch_array > 32).mean()), 5),
     }
+
+
+def audit_background_uniqueness(project: Path, spec: Dict[str, Any]) -> Dict[str, Any]:
+    validate_background_provenance(project, spec)
+    issues: List[Dict[str, Any]] = []
+    hashes: Dict[str, int] = {}
+    slide_count = int(spec["slide_count"])
+    for slide_no in range(1, slide_count + 1):
+        path = background_image_path(project, slide_no)
+        digest = sha256_file(path)
+        if digest in hashes:
+            issues.append(
+                {
+                    "kind": "background_exact_duplicate",
+                    "slide": slide_no,
+                    "other_slide": hashes[digest],
+                    "message": "background image is byte-identical to another slide",
+                }
+            )
+        else:
+            hashes[digest] = slide_no
+
+    for slide_no in range(2, slide_count + 1):
+        prev = background_image_path(project, slide_no - 1)
+        current = background_image_path(project, slide_no)
+        if not prev.exists() or not current.exists():
+            continue
+        metrics = compare_images(prev, current, max_width=384)
+        if (
+            float(metrics.get("pixel_similarity", 0.0)) >= 0.995
+            and float(metrics.get("bad_pixel_ratio_32", 1.0)) <= 0.005
+        ):
+            issues.append(
+                {
+                    "kind": "background_near_duplicate",
+                    "slide": slide_no,
+                    "other_slide": slide_no - 1,
+                    "pixel_similarity": metrics.get("pixel_similarity"),
+                    "bad_pixel_ratio_32": metrics.get("bad_pixel_ratio_32"),
+                    "message": "background is visually near-identical to the previous slide",
+                }
+            )
+    return {"created_at": now_iso(), "issue_count": len(issues), "issues": issues}
+
+
+def write_background_audit(project: Path, report: Dict[str, Any]) -> None:
+    write_json(project / "reports/background_audit.json", report)
+    lines = [
+        "# Background Audit",
+        "",
+        f"- Issues: {report['issue_count']}",
+        "",
+        "| Slide | Other slide | Kind | Message |",
+        "| --- | --- | --- | --- |",
+    ]
+    for issue in report["issues"]:
+        lines.append(
+            f"| {issue.get('slide', '')} | {issue.get('other_slide', '')} | {issue['kind']} | {issue['message']} |"
+        )
+    (project / "reports/background_audit.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def rendered_slide_path(rendered_dir: Path, slide: int) -> Optional[Path]:
@@ -1745,6 +2261,22 @@ def rect_inside(inner: Tuple[float, float, float, float], outer: Tuple[float, fl
     )
 
 
+def visible_text_length(slide: Dict[str, Any]) -> int:
+    total = 0
+    for item in slide.get("text_items", []):
+        text = str(item.get("text", ""))
+        total += sum(1 for ch in text if not ch.isspace())
+    return total
+
+
+def box_ratio(box: Tuple[int, int, int, int]) -> float:
+    return max(1, box[2] - box[0]) / max(1, box[3] - box[1])
+
+
+def relative_ratio_error(observed: float, expected: float) -> float:
+    return abs(observed - expected) / max(expected, 0.0001)
+
+
 def source_layer_paste_rect(
     project: Path,
     layer: Dict[str, Any],
@@ -1755,6 +2287,19 @@ def source_layer_paste_rect(
     draw_frame = bool_option(layer.get("draw_frame"), False)
     geometry = source_fit_geometry(project, layer, image_size, draw_frame=draw_frame, panel_image=panel_image)
     return pixels_to_unit_rect(geometry["paste_box"], width, height)
+
+
+def load_background_panel_reference(project: Path, slide_no: int, image_size: Tuple[int, int]) -> Optional["Image.Image"]:
+    path = background_image_path(project, slide_no)
+    if not path.exists() or Image is None:
+        return None
+    try:
+        image = Image.open(path).convert("RGB")
+        if image.size != image_size:
+            image = image.resize(image_size, Image.Resampling.LANCZOS)
+        return image
+    except Exception:
+        return None
 
 
 def audit_source_layers(project: Path) -> Dict[str, Any]:
@@ -1768,11 +2313,15 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
 
     for slide in plan.get("slides", []):
         slide_no = int(slide["slide"])
-        panel_reference = load_native_panel_reference(project, slide_no, image_size)
+        panel_reference = load_native_panel_reference(project, slide_no, image_size) or load_background_panel_reference(project, slide_no, image_size)
         text_rects = []
+        layer_rects_for_slide: List[Dict[str, Any]] = []
+        text_area = 0.0
         for item in slide.get("text_items", []):
             bbox = item.get("bbox") or default_bbox(str(item.get("role", "body")), 0)
-            text_rects.append((str(item.get("role", "text")), unit_rect(bbox)))
+            text_rect = unit_rect(bbox)
+            text_rects.append((str(item.get("role", "text")), text_rect))
+            text_area += rect_area(text_rect)
         for idx, layer in enumerate(slide.get("source_layers", []), start=1):
             layer_rect = unit_rect(layer.get("bbox", []))
             draw_frame = bool_option(layer.get("draw_frame"), False)
@@ -1783,6 +2332,13 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
             panel_rect = pixels_to_unit_rect(geometry["panel_box"], width, height)
             actual_panel_rect = pixels_to_unit_rect(geometry["actual_panel_box"], width, height)
             declared_panel_rect = pixels_to_unit_rect(geometry["declared_panel_box"], width, height)
+            visible_panel_box = geometry["panel_box"] if draw_frame else geometry["actual_panel_box"]
+            visible_panel_rect = pixels_to_unit_rect(visible_panel_box, width, height)
+            visible_fit_box = inset_box(visible_panel_box, geometry["margin_px"])
+            source_ratio = geometry["source_size"][0] / max(1, geometry["source_size"][1])
+            visible_panel_ratio = box_ratio(visible_panel_box)
+            visible_fit_ratio = box_ratio(visible_fit_box)
+            panel_aspect_error = relative_ratio_error(visible_fit_ratio, source_ratio)
             detected_panel = geometry.get("detected_panel_box")
             detected_panel_rect = pixels_to_unit_rect(detected_panel, width, height) if detected_panel else None
             row = {
@@ -1793,6 +2349,7 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
                 "paste_bbox": list(paste_rect),
                 "fit_bbox": list(fit_rect),
                 "panel_bbox": list(panel_rect),
+                "visible_panel_bbox": list(visible_panel_rect),
                 "actual_panel_bbox": list(actual_panel_rect),
                 "declared_panel_bbox": list(declared_panel_rect),
                 "detected_panel_bbox": list(detected_panel_rect) if detected_panel_rect else None,
@@ -1800,10 +2357,21 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
                 "margin_px": geometry["margin_px"],
                 "panel_aspect_from_source": geometry["panel_aspect_from_source"],
                 "source_size_px": list(geometry["source_size"]),
+                "source_aspect_ratio": round(float(source_ratio), 5),
+                "visible_panel_aspect_ratio": round(float(visible_panel_ratio), 5),
+                "visible_inset_aspect_ratio": round(float(visible_fit_ratio), 5),
+                "panel_aspect_error": round(float(panel_aspect_error), 5),
                 "slack_px": list(geometry["slack_px"]),
                 "center_delta_px": [round(float(v), 3) for v in geometry["center_delta_px"]],
             }
             rows.append(row)
+            layer_rects_for_slide.append(
+                {
+                    "layer": idx,
+                    "visible_panel_rect": visible_panel_rect,
+                    "paste_rect": paste_rect,
+                }
+            )
 
             if not rect_inside(layer_rect, (0.0, 0.0, 1.0, 1.0), tolerance=0.0):
                 issues.append({"slide": slide_no, "layer": idx, "kind": "out_of_slide", "message": "source layer bbox is outside the slide"})
@@ -1817,6 +2385,19 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
                 issues.append({"slide": slide_no, "layer": idx, "kind": "center_misaligned", "message": "source image center is not aligned with the inset panel center"})
             if native_base_present and draw_frame:
                 issues.append({"slide": slide_no, "layer": idx, "kind": "duplicate_frame_risk", "message": "native imagegen base is present but source layer requests an extra drawn frame"})
+            aspect_tolerance = float(layer.get("panel_aspect_tolerance", DEFAULT_PANEL_ASPECT_TOLERANCE))
+            if geometry["panel_aspect_from_source"] and panel_aspect_error > aspect_tolerance:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": idx,
+                        "kind": "panel_aspect_mismatch",
+                        "message": (
+                            "visible/native panel inset ratio does not match trimmed source ratio "
+                            f"({visible_fit_ratio:.3f}:1 vs {source_ratio:.3f}:1)"
+                        ),
+                    }
+                )
 
             for role, text_rect in text_rects:
                 overlap = rect_intersection(paste_rect, text_rect)
@@ -1833,6 +2414,82 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
                             "message": f"source image paste area overlaps editable text role `{role}`",
                         }
                     )
+
+        for left_index, left in enumerate(layer_rects_for_slide):
+            for right in layer_rects_for_slide[left_index + 1 :]:
+                panel_overlap = rect_intersection(left["visible_panel_rect"], right["visible_panel_rect"])
+                if panel_overlap > 0:
+                    denom = max(
+                        0.0001,
+                        min(rect_area(left["visible_panel_rect"]), rect_area(right["visible_panel_rect"])),
+                    )
+                    if panel_overlap / denom > 0.005:
+                        issues.append(
+                            {
+                                "slide": slide_no,
+                                "layer": left["layer"],
+                                "kind": "source_panel_overlap",
+                                "message": f"source panel overlaps layer {right['layer']}",
+                            }
+                        )
+                paste_overlap = rect_intersection(left["paste_rect"], right["paste_rect"])
+                if paste_overlap > 0:
+                    denom = max(0.0001, min(rect_area(left["paste_rect"]), rect_area(right["paste_rect"])))
+                    if paste_overlap / denom > 0.005:
+                        issues.append(
+                            {
+                                "slide": slide_no,
+                                "layer": left["layer"],
+                                "kind": "source_image_overlap",
+                                "message": f"source image paste area overlaps layer {right['layer']}",
+                            }
+                        )
+
+        if layer_rects_for_slide and bool_option(slide.get("figure_first"), True):
+            source_area = sum(rect_area(item["visible_panel_rect"]) for item in layer_rects_for_slide)
+            text_chars = visible_text_length(slide)
+            min_source_area = float(slide.get("figure_first_min_source_area", DEFAULT_FIGURE_FIRST_MIN_SOURCE_AREA))
+            min_source_text_ratio = float(
+                slide.get("figure_first_min_source_text_ratio", DEFAULT_FIGURE_FIRST_MIN_SOURCE_TEXT_RATIO)
+            )
+            max_text_chars = int(slide.get("figure_first_max_text_chars", DEFAULT_FIGURE_FIRST_MAX_TEXT_CHARS))
+            if source_area < min_source_area:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": 0,
+                        "kind": "figure_not_primary",
+                        "message": (
+                            "source figures are not the primary visual area "
+                            f"({source_area:.3f} slide area; required >= {min_source_area:.3f})"
+                        ),
+                    }
+                )
+            if text_area > 0 and source_area / max(text_area, 0.0001) < min_source_text_ratio:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": 0,
+                        "kind": "text_dominates_figure",
+                        "message": (
+                            "editable text layout area is too large for a figure-first slide "
+                            f"(source/text area ratio {source_area / max(text_area, 0.0001):.2f}; "
+                            f"required >= {min_source_text_ratio:.2f})"
+                        ),
+                    }
+                )
+            if text_chars > max_text_chars:
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": 0,
+                        "kind": "figure_slide_text_overload",
+                        "message": (
+                            "figure-first slide text is too heavy "
+                            f"({text_chars} non-space chars; required <= {max_text_chars})"
+                        ),
+                    }
+                )
 
     return {"created_at": now_iso(), "issue_count": len(issues), "issues": issues, "layers": rows}
 
@@ -1865,9 +2522,11 @@ def cmd_audit_layout(args: argparse.Namespace) -> None:
 def cmd_qa(args: argparse.Namespace) -> None:
     project = Path(args.project).resolve()
     spec = load_project(project)
+    validate_completed_provenance(project, spec)
+    validate_background_provenance(project, spec)
     pptx_path = Path(args.pptx).resolve() if args.pptx else project / "pptx/image2slides.pptx"
     rendered_dir = Path(args.rendered_dir).resolve() if args.rendered_dir else project / "reports/rendered"
-    if args.render and not rendered_dir.exists():
+    if args.render:
         cmd_render(argparse.Namespace(project=str(project), pptx=str(pptx_path), out_dir=str(rendered_dir), dpi=args.dpi))
     rows = []
     for i in range(1, int(spec["slide_count"]) + 1):
@@ -1877,7 +2536,23 @@ def cmd_qa(args: argparse.Namespace) -> None:
             rows.append({"slide": i, "status": "missing", "completed": str(completed), "rendered": str(rendered) if rendered else None})
             continue
         metrics = compare_images(completed, rendered)
-        rows.append({"slide": i, "status": "ok", "completed": str(completed), "rendered": str(rendered), **metrics})
+        strict_failures = []
+        if float(metrics.get("bad_pixel_ratio_32", 0.0)) > args.max_bad_pixel_ratio:
+            strict_failures.append("bad_pixel_ratio_32")
+        if float(metrics.get("detail_patch_mae_p90", 0.0)) > args.max_patch_p90_mae:
+            strict_failures.append("detail_patch_mae_p90")
+        if float(metrics.get("detail_bad_patch_ratio_32", 0.0)) > args.max_bad_patch_ratio:
+            strict_failures.append("detail_bad_patch_ratio_32")
+        rows.append(
+            {
+                "slide": i,
+                "status": "strict_fail" if strict_failures else "ok",
+                "strict_failures": strict_failures,
+                "completed": str(completed),
+                "rendered": str(rendered),
+                **metrics,
+            }
+        )
     report = {
         "created_at": now_iso(),
         "pptx": str(pptx_path),
@@ -1887,6 +2562,8 @@ def cmd_qa(args: argparse.Namespace) -> None:
     write_json(project / "reports/qa_similarity.json", report)
     layout_report = audit_source_layers(project)
     write_source_layer_audit(project, layout_report)
+    background_report = audit_background_uniqueness(project, spec)
+    write_background_audit(project, background_report)
     failing = [
         r for r in rows
         if r.get("status") != "ok" or float(r.get("pixel_similarity", 0.0)) < args.min_similarity
@@ -1899,23 +2576,34 @@ def cmd_qa(args: argparse.Namespace) -> None:
         f"- Slides checked: {len(rows)}",
         f"- Failing or missing slides: {len(failing)}",
         f"- Source layer layout issues: {layout_report['issue_count']}",
+        f"- Background issues: {background_report['issue_count']}",
         "",
-        "| Slide | Status | Pixel similarity | Patch similarity |",
-        "| --- | --- | --- | --- |",
+        f"- Max bad-pixel ratio (>32): {args.max_bad_pixel_ratio}",
+        f"- Max detail patch p90 MAE: {args.max_patch_p90_mae}",
+        f"- Max bad detail patch ratio (>32): {args.max_bad_patch_ratio}",
+        "",
+        "| Slide | Status | Pixel similarity | Bad px >32 | Patch p90 MAE | Strict failures |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for row in rows:
         lines.append(
-            f"| {row['slide']} | {row.get('status')} | {row.get('pixel_similarity', '')} | {row.get('patch_similarity', '')} |"
+            f"| {row['slide']} | {row.get('status')} | {row.get('pixel_similarity', '')} | "
+            f"{row.get('bad_pixel_ratio_32', '')} | {row.get('detail_patch_mae_p90', '')} | "
+            f"{', '.join(row.get('strict_failures', []))} |"
         )
     (project / "reports/qa_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"Wrote {project / 'reports/qa_similarity.json'}")
     print(f"Wrote {project / 'reports/qa_report.md'}")
     print(f"Wrote {project / 'reports/source_layer_audit.json'}")
     print(f"Wrote {project / 'reports/source_layer_audit.md'}")
+    print(f"Wrote {project / 'reports/background_audit.json'}")
+    print(f"Wrote {project / 'reports/background_audit.md'}")
     if args.strict and failing:
         die(f"{len(failing)} slide(s) failed similarity threshold")
     if args.strict and layout_report["issue_count"]:
         die(f"source layer layout audit found {layout_report['issue_count']} issue(s)")
+    if args.strict and background_report["issue_count"]:
+        die(f"background audit found {background_report['issue_count']} issue(s)")
 
 
 def cmd_doctor(args: argparse.Namespace) -> None:
@@ -1949,14 +2637,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--project", required=True)
     p.set_defaults(func=cmd_queue)
 
+    p = sub.add_parser("normalize-source-panels", help="Normalize source-layer panel bbox ratios to trimmed source image ratios")
+    p.add_argument("--project", required=True)
+    p.add_argument("--check", action="store_true")
+    p.add_argument("--strict", action="store_true")
+    p.set_defaults(func=cmd_normalize_source_panels)
+
     p = sub.add_parser("lint-visible", help="Check that control-plane inputs do not appear as slide text")
     p.add_argument("--project", required=True)
     p.add_argument("--strict", action="store_true")
     p.set_defaults(func=cmd_lint_visible)
 
-    p = sub.add_parser("compose-source-locked", help="Compose source-locked completed/background refs from the slide plan")
+    p = sub.add_parser("compose-source-locked", help="Patch exact source figures into existing image_gen completed/background refs")
     p.add_argument("--project", required=True)
-    p.add_argument("--base-dir", help="Optional GPT-image-2 native background base directory")
+    p.add_argument("--base-dir", help=argparse.SUPPRESS)
     p.set_defaults(func=cmd_compose_source_locked)
 
     p = sub.add_parser("audit-layout", help="Audit source layers for panel placement, duplicate frames, and text overlap")
@@ -1973,6 +2667,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--execute", action="store_true")
     p.set_defaults(func=cmd_imagegen)
+
+    p = sub.add_parser("register-completed", help="Record GPT-image-2 provenance for completed images copied from native image_gen")
+    p.add_argument("--project", required=True)
+    p.add_argument("--method", default="registered_native_image_gen", choices=sorted(COMPLETED_ALLOWED_METHODS))
+    p.add_argument("--source", default="Codex native image_gen GPT-image-2 output")
+    p.add_argument("--note", default="")
+    p.set_defaults(func=cmd_register_completed)
+
+    p = sub.add_parser("register-background", help="Record GPT-image-2 edit provenance for background images copied from native image_gen")
+    p.add_argument("--project", required=True)
+    p.add_argument("--method", default="registered_native_image_gen_edit", choices=sorted(BACKGROUND_ALLOWED_METHODS))
+    p.add_argument("--source", default="Codex native image_gen GPT-image-2 text-free background edit output")
+    p.add_argument("--note", default="")
+    p.set_defaults(func=cmd_register_background)
 
     p = sub.add_parser("analyze", help="Analyze completed/background pairs")
     p.add_argument("--project", required=True)
@@ -2000,7 +2708,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--render", action="store_true", default=True)
     p.add_argument("--no-render", action="store_false", dest="render")
     p.add_argument("--dpi", type=int, default=144)
-    p.add_argument("--min-similarity", type=float, default=0.82)
+    p.add_argument("--min-similarity", type=float, default=0.90)
+    p.add_argument("--max-bad-pixel-ratio", type=float, default=0.25)
+    p.add_argument("--max-patch-p90-mae", type=float, default=56.0)
+    p.add_argument("--max-bad-patch-ratio", type=float, default=0.36)
     p.add_argument("--strict", action="store_true")
     p.set_defaults(func=cmd_qa)
 

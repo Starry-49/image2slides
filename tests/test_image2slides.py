@@ -46,6 +46,34 @@ def make_pair(project: Path, slide: int, text: str = "TITLE") -> None:
     completed.save(project / "completed" / f"slide_{slide:02d}_completed.png")
 
 
+def register_completed(project: Path) -> None:
+    run_cli(
+        [
+            "register-completed",
+            "--project",
+            str(project),
+            "--method",
+            "test_image_gen_fixture",
+            "--source",
+            "Codex native image_gen GPT-image-2 output",
+        ]
+    )
+
+
+def register_background(project: Path) -> None:
+    run_cli(
+        [
+            "register-background",
+            "--project",
+            str(project),
+            "--method",
+            "test_image_gen_edit_fixture",
+            "--source",
+            "Codex native image_gen GPT-image-2 text-free background edit output",
+        ]
+    )
+
+
 class Image2SlidesTests(unittest.TestCase):
     def test_init_requires_all_fields(self) -> None:
         with tempfile_dir() as tmp:
@@ -78,6 +106,8 @@ class Image2SlidesTests(unittest.TestCase):
             write_spec(spec, slide_count=1)
             run_cli(["init", "--project", str(project), "--spec", str(spec)])
             make_pair(project, 1)
+            register_completed(project)
+            register_background(project)
 
             plan_path = project / "wiki/04_slide_plan.json"
             plan = json.loads(plan_path.read_text(encoding="utf-8"))
@@ -102,6 +132,8 @@ class Image2SlidesTests(unittest.TestCase):
                 slide_xml = archive.read("ppt/slides/slide1.xml").decode("utf-8")
                 self.assertIn("<p:bg>", slide_xml)
                 self.assertIn("TITLE", slide_xml)
+                self.assertIn("<a:noAutofit/>", slide_xml)
+                self.assertNotIn("<a:spAutoFit/>", slide_xml)
 
     def test_build_blocks_control_plane_text(self) -> None:
         with tempfile_dir() as tmp:
@@ -110,6 +142,8 @@ class Image2SlidesTests(unittest.TestCase):
             write_spec(spec, slide_count=1)
             run_cli(["init", "--project", str(project), "--spec", str(spec)])
             make_pair(project, 1, text="deep navy")
+            register_completed(project)
+            register_background(project)
 
             plan_path = project / "wiki/04_slide_plan.json"
             plan = json.loads(plan_path.read_text(encoding="utf-8"))
@@ -124,7 +158,45 @@ class Image2SlidesTests(unittest.TestCase):
             lint = json.loads((project / "reports/internal_text_lint.json").read_text(encoding="utf-8"))
             self.assertGreater(lint["issue_count"], 0)
 
-    def test_compose_source_locked_creates_image_pairs(self) -> None:
+    def test_analyze_rejects_unregistered_completed_reference(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+            make_pair(project, 1)
+
+            with self.assertRaises(SystemExit):
+                run_cli(["analyze", "--project", str(project), "--threshold", "18", "--min-area", "20"])
+
+    def test_analyze_rejects_unregistered_background_edit(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+            make_pair(project, 1)
+            register_completed(project)
+
+            with self.assertRaises(SystemExit):
+                run_cli(["analyze", "--project", str(project), "--threshold", "18", "--min-area", "20"])
+
+    def test_background_audit_blocks_duplicate_backgrounds(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=2)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+            make_pair(project, 1)
+            make_pair(project, 2)
+            register_completed(project)
+            register_background(project)
+
+            report = image2slides.audit_background_uniqueness(project, image2slides.load_project(project))
+            self.assertGreater(report["issue_count"], 0)
+            self.assertIn("background_exact_duplicate", {issue["kind"] for issue in report["issues"]})
+
+    def test_compose_source_locked_patches_existing_imagegen_pairs(self) -> None:
         with tempfile_dir() as tmp:
             spec = tmp / "spec.json"
             project = tmp / "deck"
@@ -139,10 +211,15 @@ class Image2SlidesTests(unittest.TestCase):
             base_dir = project / "tmp/native_imagegen"
             base_dir.mkdir(parents=True)
             Image.new("RGB", (2048, 1152), "#eef6ff").save(base_dir / "slide_01_base.png")
+            Image.new("RGB", (2048, 1152), "#eef6ff").save(project / "completed/slide_01_completed.png")
+            Image.new("RGB", (2048, 1152), "#eef6ff").save(project / "background/slide_01_background.png")
+            register_completed(project)
+            register_background(project)
             plan_path = project / "wiki/04_slide_plan.json"
             plan = json.loads(plan_path.read_text(encoding="utf-8"))
             plan["slides"][0].update(
                 {
+                    "figure_first": False,
                     "background_color": "#fbfcfe",
                     "source_layers": [
                         {
@@ -161,6 +238,7 @@ class Image2SlidesTests(unittest.TestCase):
             )
             plan_path.write_text(json.dumps(plan), encoding="utf-8")
 
+            run_cli(["normalize-source-panels", "--project", str(project)])
             run_cli(["compose-source-locked", "--project", str(project), "--base-dir", str(base_dir)])
             run_cli(["audit-layout", "--project", str(project), "--strict"])
             self.assertTrue((project / "completed/slide_01_completed.png").exists())
@@ -189,14 +267,19 @@ class Image2SlidesTests(unittest.TestCase):
             base_dir.mkdir(parents=True)
             base = Image.new("RGB", (2048, 1152), "#fbfcfe")
             draw_base = ImageDraw.Draw(base)
-            actual_panel = (1100, 140, 1900, 1040)
+            actual_panel = (1100, 140, 1900, 572)
             draw_base.rounded_rectangle(actual_panel, radius=24, fill="#ffffff", outline="#cddceb", width=3)
             base.save(base_dir / "slide_01_base.png")
+            base.save(project / "completed/slide_01_completed.png")
+            base.save(project / "background/slide_01_background.png")
+            register_completed(project)
+            register_background(project)
 
             plan_path = project / "wiki/04_slide_plan.json"
             plan = json.loads(plan_path.read_text(encoding="utf-8"))
             plan["slides"][0].update(
                 {
+                    "figure_first": False,
                     "source_layers": [
                         {
                             "path": "wiki/sources/source.png",
@@ -233,6 +316,45 @@ class Image2SlidesTests(unittest.TestCase):
             self.assertLess(layer["slack_px"][0], 3)
             self.assertLess(layer["slack_px"][1], 3)
 
+    def test_normalize_source_panels_blocks_mismatched_panel_aspect(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            source = project / "wiki/sources/wide.png"
+            Image.new("RGB", (400, 200), "#2f80ed").save(source)
+            Image.new("RGB", (2048, 1152), "#fbfcfe").save(project / "completed/slide_01_completed.png")
+            Image.new("RGB", (2048, 1152), "#fbfcfe").save(project / "background/slide_01_background.png")
+            register_completed(project)
+            register_background(project)
+
+            plan_path = project / "wiki/04_slide_plan.json"
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["slides"][0]["text_items"] = []
+            plan["slides"][0]["figure_first"] = False
+            plan["slides"][0]["source_layers"] = [
+                {
+                    "path": "wiki/sources/wide.png",
+                    "bbox": [0.50, 0.15, 0.30, 0.45],
+                    "panel_bbox": [0.50, 0.15, 0.30, 0.45],
+                    "fit_margin_px": 32,
+                    "draw_frame": False,
+                }
+            ]
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+            with self.assertRaises(SystemExit):
+                run_cli(["audit-layout", "--project", str(project), "--strict"])
+            audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
+            self.assertIn("panel_aspect_mismatch", {issue["kind"] for issue in audit["issues"]})
+
+            run_cli(["normalize-source-panels", "--project", str(project)])
+            run_cli(["audit-layout", "--project", str(project), "--strict"])
+            audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
+            self.assertEqual(audit["issue_count"], 0)
+
     def test_layout_audit_blocks_source_overlap(self) -> None:
         with tempfile_dir() as tmp:
             spec = tmp / "spec.json"
@@ -266,6 +388,85 @@ class Image2SlidesTests(unittest.TestCase):
             audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
             kinds = {issue["kind"] for issue in audit["issues"]}
             self.assertIn("text_overlap", kinds)
+
+    def test_layout_audit_blocks_source_panel_overlap(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            source_a = project / "wiki/sources/source-a.png"
+            source_b = project / "wiki/sources/source-b.png"
+            Image.new("RGB", (240, 160), "#2f80ed").save(source_a)
+            Image.new("RGB", (240, 160), "#1aae8f").save(source_b)
+            plan_path = project / "wiki/04_slide_plan.json"
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["slides"][0]["text_items"] = []
+            plan["slides"][0]["source_layers"] = [
+                {
+                    "path": "wiki/sources/source-a.png",
+                    "bbox": [0.45, 0.20, 0.30, 0.30],
+                    "panel_bbox": [0.45, 0.20, 0.30, 0.30],
+                    "draw_frame": False,
+                    "panel_aspect_from_source": False,
+                },
+                {
+                    "path": "wiki/sources/source-b.png",
+                    "bbox": [0.58, 0.34, 0.30, 0.30],
+                    "panel_bbox": [0.58, 0.34, 0.30, 0.30],
+                    "draw_frame": False,
+                    "panel_aspect_from_source": False,
+                },
+            ]
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+            with self.assertRaises(SystemExit):
+                run_cli(["audit-layout", "--project", str(project), "--strict"])
+            audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
+            self.assertIn("source_panel_overlap", {issue["kind"] for issue in audit["issues"]})
+
+    def test_layout_audit_blocks_non_primary_figure_layout(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            source = project / "wiki/sources/result.png"
+            Image.new("RGB", (320, 180), "#2f80ed").save(source)
+            plan_path = project / "wiki/04_slide_plan.json"
+            plan = json.loads(plan_path.read_text(encoding="utf-8"))
+            plan["slides"][0].update(
+                {
+                    "text_items": [
+                        {"role": "title", "text": "Figure slide", "bbox": [0.06, 0.06, 0.80, 0.12]},
+                        {
+                            "role": "body",
+                            "text": "This slide has too much supporting prose for a figure-first layout. " * 4,
+                            "bbox": [0.06, 0.22, 0.52, 0.56],
+                        },
+                    ],
+                    "source_layers": [
+                        {
+                            "path": "wiki/sources/result.png",
+                            "bbox": [0.66, 0.30, 0.20, 0.18],
+                            "panel_bbox": [0.66, 0.30, 0.20, 0.18],
+                            "draw_frame": False,
+                            "panel_aspect_from_source": False,
+                        }
+                    ],
+                }
+            )
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+            with self.assertRaises(SystemExit):
+                run_cli(["audit-layout", "--project", str(project), "--strict"])
+            audit = json.loads((project / "reports/source_layer_audit.json").read_text(encoding="utf-8"))
+            kinds = {issue["kind"] for issue in audit["issues"]}
+            self.assertIn("figure_not_primary", kinds)
+            self.assertIn("text_dominates_figure", kinds)
+            self.assertIn("figure_slide_text_overload", kinds)
 
 
 class tempfile_dir:
