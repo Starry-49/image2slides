@@ -10,56 +10,26 @@ Image2Slides 是一个 Codex plugin 和 CLI workflow，用于把 GPT-image slide
 
 Plugin 入口是 `/image2slides`，核心说明在 [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md)，确定性脚本在 [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py)。
 
-## 安装
+## Just Copy Prompt
 
-可以通过 npm 直接从 GitHub 安装：
+把下面这段直接复制给你的本地 Codex 或 coding agent。让 agent 负责装依赖、搭 workflow、导入 Codex App plugin。
 
-```bash
-npm install -g git+https://github.com/Starry-49/image2slides.git
-image2slides doctor
+```text
+请从 https://github.com/Starry-49/image2slides 在本地安装 Image2Slides，并让它在 Codex App 中作为 /image2slides plugin 可用。
+
+请端到端完成：
+1. 把仓库 clone 或更新到本地 workspace。
+2. 先阅读 README.md、.codex-plugin/plugin.json、skills/image2slides/SKILL.md、package.json、pyproject.toml 和 tests，再做任何改动。
+3. 根据仓库自己的 manifest 安装 helper workflow 所需的本地 Node/Python 依赖。
+4. 从仓库根目录导入或刷新 Codex App plugin，manifest 使用 .codex-plugin/plugin.json。不要把 Codex 指到 skills/ 子目录。
+5. 确认 Image2Slides plugin 已经被索引，并且 /image2slides 可用。
+6. 运行 plugin doctor 和最小测试。
+7. 创建一个小的本地 deck workspace，并确认 workflow 目录可以初始化：wiki、prompts、completed、background、analysis、pptx、reports。
+8. 确认 GPT-image-2 默认走 Codex native image_gen，不要向我索要 OPENAI_API_KEY，除非我明确要求 SDK/API fallback。
+9. 汇报最终 plugin 路径、依赖/运行时选择、验证证据，以及我是否还需要手动刷新 Codex App。
+
+所有生成的 deck 和私人知识库资料都留在本地。不要发布示例产物，除非我明确要求。
 ```
-
-Codex local plugin 部署有两种方式：
-
-1. 自主安装：
-
-   ```bash
-   git clone https://github.com/Starry-49/image2slides.git
-   cd image2slides
-   npm install -g .
-   npm pack
-   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides
-   rm -rf ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
-   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
-   tar -xzf image2slides-1.0.0.tgz \
-     -C ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0 \
-     --strip-components=1
-   rm image2slides-1.0.0.tgz
-   image2slides doctor
-   ```
-
-   然后重启或刷新 Codex，让本地 plugin cache 重新索引。plugin manifest 是 `.codex-plugin/plugin.json`，slash-command skill 是 `skills/image2slides/SKILL.md`。
-
-2. 指引 Codex 安装：
-
-   ```text
-   请从 /path/to/image2slides 安装或刷新本地 Codex plugin。
-   使用 .codex-plugin/plugin.json 作为 manifest，启用 Image2Slides plugin，
-   然后运行 `image2slides doctor` 并确认 `/image2slides` 可用。
-   ```
-
-   如果 Codex App 要求选择路径，选择仓库根目录，不要选择 `skills/` 子目录。
-
-本地开发：
-
-```bash
-git clone https://github.com/Starry-49/image2slides.git
-cd image2slides
-PYTHONPATH=skills/image2slides/scripts python3 tests/test_image2slides.py
-python3 skills/image2slides/scripts/image2slides.py doctor
-```
-
-默认 GPT-image-2 调用走 Codex native `image_gen`，不需要 `OPENAI_API_KEY`。OpenAI SDK/API-key CLI 只是显式需要 API/SDK 执行时的 fallback。
 
 ## 用户必填输入
 
@@ -206,7 +176,7 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 
 ![Howitworks 人工审查 PDF 预览](./howitworks/image2slides_run/pptx/image2slides_preview.png)
 
-主要可编辑结果是 [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx)。人工审查后的视觉导出是 [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf)；最终看图时优先看这个 PDF，因为它直接来自审查后的 PowerPoint，避免后续转换带来的偏差。npm 包仍保持轻量，不包含这组较大的示例 artifacts；需要检查或复跑示例时请 clone GitHub repo。
+主要可编辑结果是 [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx)。人工审查后的视觉导出是 [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf)；最终看图时优先看这个 PDF，因为它直接来自审查后的 PowerPoint，避免后续转换带来的偏差。轻量 plugin bundle 不包含这组较大的示例 artifacts；需要检查或复跑示例时请 clone GitHub repo。
 
 ## 输出目录
 

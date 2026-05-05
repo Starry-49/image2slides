@@ -10,56 +10,26 @@ Image2Slides は、GPT-image のスライド視覚結果を編集可能な Power
 
 Plugin の入口は `/image2slides` です。手順は [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md)、決定的な処理を行う CLI は [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py) にあります。
 
-## インストール
+## Just Copy Prompt
 
-npm で GitHub から直接インストールできます。
+次の prompt をローカルの Codex または coding agent にそのまま渡してください。依存関係の準備、workflow の初期化、Codex App plugin の import は agent に任せます。
 
-```bash
-npm install -g git+https://github.com/Starry-49/image2slides.git
-image2slides doctor
+```text
+https://github.com/Starry-49/image2slides から Image2Slides をローカルにインストールし、Codex App で /image2slides plugin として使える状態にしてください。
+
+端から端まで実行してください:
+1. repository をローカル workspace に clone または update する。
+2. 変更前に README.md、.codex-plugin/plugin.json、skills/image2slides/SKILL.md、package.json、pyproject.toml、tests を確認する。
+3. repository の manifest に従って helper workflow に必要な local Node/Python dependencies を入れる。
+4. repository root から Codex App plugin を import または refresh する。manifest は .codex-plugin/plugin.json を使う。Codex に skills/ subdirectory を指定しない。
+5. Image2Slides plugin が index され、/image2slides が使えることを確認する。
+6. plugin doctor と最小テストを実行する。
+7. 小さな local deck workspace を作り、wiki、prompts、completed、background、analysis、pptx、reports の workflow folders を初期化できることを確認する。
+8. GPT-image-2 はデフォルトで Codex native image_gen を使うことを確認する。私が SDK/API fallback を明示しない限り、OPENAI_API_KEY を求めない。
+9. 最終的な plugin path、dependency/runtime choices、verification evidence、必要な Codex App refresh 手順を報告する。
+
+生成した deck と private knowledge-base material はすべて local に保持してください。私が明示的に依頼しない限り、example artifacts を公開しないでください。
 ```
-
-Codex local plugin のデプロイには 2 つの方法があります。
-
-1. 自分でインストールする方法:
-
-   ```bash
-   git clone https://github.com/Starry-49/image2slides.git
-   cd image2slides
-   npm install -g .
-   npm pack
-   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides
-   rm -rf ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
-   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
-   tar -xzf image2slides-1.0.0.tgz \
-     -C ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0 \
-     --strip-components=1
-   rm image2slides-1.0.0.tgz
-   image2slides doctor
-   ```
-
-   その後、Codex を再起動または refresh して local plugin cache を再 index します。plugin manifest は `.codex-plugin/plugin.json`、slash-command skill は `skills/image2slides/SKILL.md` です。
-
-2. Codex にインストールを依頼する方法:
-
-   ```text
-   Install or refresh the local Codex plugin from /path/to/image2slides.
-   Use .codex-plugin/plugin.json as the manifest, enable the Image2Slides plugin,
-   then run `image2slides doctor` and confirm `/image2slides` is available.
-   ```
-
-   アプリが path を要求する場合は、`skills/` ではなく repository root を指定します。
-
-ローカル開発:
-
-```bash
-git clone https://github.com/Starry-49/image2slides.git
-cd image2slides
-PYTHONPATH=skills/image2slides/scripts python3 tests/test_image2slides.py
-python3 skills/image2slides/scripts/image2slides.py doctor
-```
-
-デフォルトの GPT-image-2 実行は Codex native `image_gen` を使うため、`OPENAI_API_KEY` は不要です。OpenAI SDK/API-key CLI は、API/SDK 実行を明示的に使う場合だけの fallback です。
 
 ## 必須入力
 
@@ -199,7 +169,7 @@ python3 skills/image2slides/scripts/image2slides.py doctor
 
 ![Howitworks human-reviewed PDF preview](./howitworks/image2slides_run/pptx/image2slides_preview.png)
 
-主な編集可能成果物は [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx) です。human-reviewed の視覚 export は [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf) です。最終的な見た目確認には、この PDF を優先してください。レビュー済み PowerPoint から直接書き出されたもので、後続変換によるずれを避けられます。npm package は軽量に保つため、この大きな example artifact set は含めません。example を確認または再実行する場合は GitHub repo を clone してください。
+主な編集可能成果物は [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx) です。human-reviewed の視覚 export は [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf) です。最終的な見た目確認には、この PDF を優先してください。レビュー済み PowerPoint から直接書き出されたもので、後続変換によるずれを避けられます。軽量 plugin bundle には、この大きな example artifact set を含めません。example を確認または再実行する場合は GitHub repo を clone してください。
 
 ## 出力ディレクトリ
 

@@ -10,56 +10,26 @@ Image2Slides is a Codex plugin and CLI workflow for turning GPT-image slide visu
 
 The plugin entrypoint is `/image2slides`, implemented by [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md). The deterministic helper CLI is [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py).
 
-## Install
+## Just Copy Prompt
 
-This repository is installable through npm directly from GitHub:
+Copy this prompt to your local Codex or coding agent. The agent should handle dependency setup, workflow bootstrap, and Codex App plugin import for you.
 
-```bash
-npm install -g git+https://github.com/Starry-49/image2slides.git
-image2slides doctor
+```text
+Install Image2Slides locally from https://github.com/Starry-49/image2slides and make it available in Codex App as the /image2slides plugin.
+
+Do this end to end:
+1. Clone or update the repository into a local workspace.
+2. Inspect README.md, .codex-plugin/plugin.json, skills/image2slides/SKILL.md, package.json, pyproject.toml, and tests before changing anything.
+3. Install the local Node/Python dependencies needed by the helper workflow using the repository's own manifests.
+4. Import or refresh the Codex App plugin from the repository root, using .codex-plugin/plugin.json as the manifest. Do not point Codex at the skills/ subdirectory.
+5. Verify that the Image2Slides plugin is indexed and that /image2slides is available.
+6. Run the plugin doctor and the minimal test suite.
+7. Create a small local deck workspace and confirm the workflow folders can be initialized: wiki, prompts, completed, background, analysis, pptx, and reports.
+8. Confirm GPT-image-2 generation uses Codex native image_gen by default and should not ask me for OPENAI_API_KEY unless I explicitly request SDK/API fallback.
+9. Report the exact plugin path, dependency/runtime choices, verification evidence, and any Codex App refresh step I still need to perform.
+
+Keep all generated decks and private knowledge-base material local. Do not publish example artifacts unless I explicitly ask.
 ```
-
-Codex local plugin deployment has two practical paths:
-
-1. Self-install from a checked-out repo:
-
-   ```bash
-   git clone https://github.com/Starry-49/image2slides.git
-   cd image2slides
-   npm install -g .
-   npm pack
-   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides
-   rm -rf ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
-   mkdir -p ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0
-   tar -xzf image2slides-1.0.0.tgz \
-     -C ~/.codex/plugins/cache/image2slides-local/image2slides/1.0.0 \
-     --strip-components=1
-   rm image2slides-1.0.0.tgz
-   image2slides doctor
-   ```
-
-   Then restart or refresh Codex so the local plugin cache is re-indexed. The plugin manifest is `.codex-plugin/plugin.json`; the slash-command skill is `skills/image2slides/SKILL.md`.
-
-2. Ask Codex to install it:
-
-   ```text
-   Install or refresh the local Codex plugin from /path/to/image2slides.
-   Use .codex-plugin/plugin.json as the manifest, enable the Image2Slides plugin,
-   then run `image2slides doctor` and confirm `/image2slides` is available.
-   ```
-
-   If the app asks for a path, point it at the repository root, not the `skills/` subdirectory.
-
-For local development:
-
-```bash
-git clone https://github.com/Starry-49/image2slides.git
-cd image2slides
-PYTHONPATH=skills/image2slides/scripts python3 tests/test_image2slides.py
-python3 skills/image2slides/scripts/image2slides.py doctor
-```
-
-Default GPT-image-2 execution uses Codex native `image_gen` and does not require `OPENAI_API_KEY`. The OpenAI SDK/API-key CLI path is an optional fallback only when you explicitly want API/SDK execution outside the native Codex imagegen path.
 
 ## Required User Inputs
 
@@ -206,7 +176,7 @@ The repository includes [howitworks/](./howitworks/) as a minimal mental model o
 
 ![Howitworks reviewed PDF preview](./howitworks/image2slides_run/pptx/image2slides_preview.png)
 
-The main editable result is [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx). The human-reviewed visual export is [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf); prefer that PDF for final visual inspection because it comes directly from the reviewed PowerPoint deck and avoids later conversion drift. The npm package stays lightweight and does not include this large example artifact set; clone the GitHub repo when you want to inspect or rerun the example.
+The main editable result is [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx). The human-reviewed visual export is [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf); prefer that PDF for final visual inspection because it comes directly from the reviewed PowerPoint deck and avoids later conversion drift. The lightweight plugin bundle does not include this large example artifact set; clone the GitHub repo when you want to inspect or rerun the example.
 
 ## Output Directory Map
 
