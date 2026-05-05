@@ -10,9 +10,9 @@ Image2Slides は、GPT-image のスライド視覚結果を編集可能な Power
 
 Plugin の入口は `/image2slides` です。手順は [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md)、決定的な処理を行う CLI は [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py) にあります。
 
-## Just Copy Prompt
+## この Prompt をコピーするだけ
 
-次の prompt をローカルの Codex または coding agent にそのまま渡してください。依存関係の準備、workflow の初期化、Codex App plugin の import は agent に任せます。
+次の prompt をローカルの Codex または coding agent にそのまま渡すだけで使えます。依存関係の準備、workflow の初期化、Codex App plugin の import は agent に任せます。
 
 ```text
 https://github.com/Starry-49/image2slides から Image2Slides をローカルにインストールし、Codex App で /image2slides plugin として使える状態にしてください。

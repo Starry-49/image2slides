@@ -10,9 +10,9 @@ Image2Slides 是一个 Codex plugin 和 CLI workflow，用于把 GPT-image slide
 
 Plugin 入口是 `/image2slides`，核心说明在 [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md)，确定性脚本在 [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py)。
 
-## Just Copy Prompt
+## 只需复制这段 Prompt
 
-把下面这段直接复制给你的本地 Codex 或 coding agent。让 agent 负责装依赖、搭 workflow、导入 Codex App plugin。
+你只需要把下面这段复制给本地 Codex 或 coding agent。让 agent 负责装依赖、搭 workflow、导入 Codex App plugin。
 
 ```text
 请从 https://github.com/Starry-49/image2slides 在本地安装 Image2Slides，并让它在 Codex App 中作为 /image2slides plugin 可用。

@@ -10,9 +10,9 @@ Image2Slides is a Codex plugin and CLI workflow for turning GPT-image slide visu
 
 The plugin entrypoint is `/image2slides`, implemented by [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md). The deterministic helper CLI is [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py).
 
-## Just Copy Prompt
+## Copy This Prompt
 
-Copy this prompt to your local Codex or coding agent. The agent should handle dependency setup, workflow bootstrap, and Codex App plugin import for you.
+You only need to copy the prompt below into your local Codex or coding agent. The agent should handle dependency setup, workflow bootstrap, and Codex App plugin import for you.
 
 ```text
 Install Image2Slides locally from https://github.com/Starry-49/image2slides and make it available in Codex App as the /image2slides plugin.
