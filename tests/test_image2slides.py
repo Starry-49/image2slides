@@ -240,6 +240,8 @@ class Image2SlidesTests(unittest.TestCase):
 
             run_cli(["normalize-source-panels", "--project", str(project)])
             run_cli(["compose-source-locked", "--project", str(project), "--base-dir", str(base_dir)])
+            with self.assertRaises(SystemExit):
+                run_cli(["compose-source-locked", "--project", str(project), "--base-dir", str(base_dir)])
             run_cli(["audit-layout", "--project", str(project), "--strict"])
             self.assertTrue((project / "completed/slide_01_completed.png").exists())
             self.assertTrue((project / "background/slide_01_background.png").exists())

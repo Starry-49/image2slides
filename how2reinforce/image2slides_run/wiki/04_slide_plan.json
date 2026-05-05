@@ -11,40 +11,85 @@
           "role": "title",
           "text": "肺癌患者 PD-1 疗效与肠道菌群关联分析",
           "bbox": [
-            0.06,
-            0.16,
-            0.58,
-            0.1
+            0.043,
+            0.215,
+            0.78,
+            0.105
           ],
-          "font_size": 32,
+          "font_size": 42,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         },
         {
           "role": "subtitle",
           "text": "基于宏基因组测序与 PD-L1 TPS 分层的本科毕业论文答辩",
           "bbox": [
-            0.06,
-            0.29,
-            0.52,
-            0.05
+            0.045,
+            0.345,
+            0.62,
+            0.055
           ],
-          "font_size": 13,
+          "font_size": 22,
           "bold": false,
-          "color": "#07143d"
+          "color": "#3f4c5c",
+          "wrap": false
         },
         {
           "role": "body",
-          "text": "研究对象：肺癌患者粪便宏基因组数据\n核心问题：不同 TPS 水平是否对应不同肠道微生态特征",
+          "text": "研究对象：",
           "bbox": [
-            0.07,
-            0.52,
-            0.45,
-            0.13
+            0.102,
+            0.535,
+            0.1,
+            0.05
           ],
-          "font_size": 13,
+          "font_size": 21,
+          "bold": true,
+          "color": "#15935a",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "肺癌患者粪便宏基因组数据",
+          "bbox": [
+            0.205,
+            0.535,
+            0.34,
+            0.05
+          ],
+          "font_size": 21,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "核心问题：",
+          "bbox": [
+            0.102,
+            0.635,
+            0.1,
+            0.05
+          ],
+          "font_size": 21,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "不同 TPS 水平是否对应不同肠道微生态特征",
+          "bbox": [
+            0.205,
+            0.635,
+            0.46,
+            0.05
+          ],
+          "font_size": 21,
+          "bold": false,
+          "color": "#07143d",
+          "wrap": false
         }
       ],
       "speaker_notes": "",
@@ -61,79 +106,155 @@
           "role": "title",
           "text": "汇报提纲",
           "bbox": [
-            0.05,
-            0.07,
-            0.3,
-            0.09
+            0.058,
+            0.095,
+            0.25,
+            0.095
           ],
-          "font_size": 32,
+          "font_size": 44,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "agenda_number",
+          "text": "01",
+          "bbox": [
+            0.112,
+            0.282,
+            0.05,
+            0.052
+          ],
+          "font_size": 27,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "研究背景与科学问题",
           "bbox": [
-            0.4,
-            0.18,
-            0.28,
-            0.04
+            0.2,
+            0.285,
+            0.43,
+            0.052
           ],
-          "font_size": 13,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 22,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "agenda_number",
+          "text": "02",
+          "bbox": [
+            0.112,
+            0.422,
+            0.05,
+            0.052
+          ],
+          "font_size": 27,
+          "bold": true,
+          "color": "#15935a",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "研究对象、测序与分析流程",
           "bbox": [
-            0.4,
-            0.275,
-            0.32,
-            0.04
+            0.2,
+            0.425,
+            0.45,
+            0.052
           ],
-          "font_size": 13,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 22,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "agenda_number",
+          "text": "03",
+          "bbox": [
+            0.112,
+            0.562,
+            0.05,
+            0.052
+          ],
+          "font_size": 27,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "多样性、组成与差异标记物",
           "bbox": [
-            0.4,
-            0.37,
-            0.32,
-            0.04
+            0.2,
+            0.565,
+            0.45,
+            0.052
           ],
-          "font_size": 13,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 22,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "agenda_number",
+          "text": "04",
+          "bbox": [
+            0.112,
+            0.702,
+            0.05,
+            0.052
+          ],
+          "font_size": 27,
+          "bold": true,
+          "color": "#15935a",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "耐药基因、功能通路与机制解释",
           "bbox": [
-            0.4,
-            0.465,
-            0.36,
-            0.04
+            0.2,
+            0.705,
+            0.49,
+            0.052
           ],
-          "font_size": 13,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 22,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "agenda_number",
+          "text": "05",
+          "bbox": [
+            0.112,
+            0.84,
+            0.05,
+            0.052
+          ],
+          "font_size": 27,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "结论、局限与后续工作",
           "bbox": [
-            0.4,
-            0.56,
-            0.32,
-            0.04
+            0.2,
+            0.843,
+            0.42,
+            0.052
           ],
-          "font_size": 13,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 22,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": false
         }
       ],
       "speaker_notes": "",
@@ -148,55 +269,59 @@
       "text_items": [
         {
           "role": "title",
-          "text": "研究背景：PD-L1 TPS 仍需补充解释",
+          "text": "研究背景：PD-L1 TPS 仍需要补充解释",
           "bbox": [
-            0.05,
-            0.07,
-            0.52,
-            0.08
+            0.045,
+            0.108,
+            0.58,
+            0.09
           ],
-          "font_size": 28,
+          "font_size": 40,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "肺癌仍是全球高负担恶性肿瘤，\nPD-1/PD-L1 抑制剂已成为 NSCLC 重要治疗方案。",
           "bbox": [
-            0.14,
-            0.24,
-            0.36,
+            0.142,
+            0.295,
+            0.48,
             0.12
           ],
-          "font_size": 14,
+          "font_size": 22,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
           "text": "PD-L1 TPS 是常用预测标志物，\n但预测准确性有限：部分 TPS<1% 患者仍可能获益，\n部分 TPS≥50% 患者无应答。",
           "bbox": [
-            0.14,
-            0.44,
-            0.38,
-            0.16
+            0.142,
+            0.485,
+            0.5,
+            0.18
           ],
-          "font_size": 14,
+          "font_size": 22,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
           "text": "肠道微生物组可调控宿主免疫状态，\n可能为 TPS 分层提供补充解释。",
           "bbox": [
-            0.14,
-            0.68,
-            0.36,
+            0.142,
+            0.735,
+            0.46,
             0.12
           ],
-          "font_size": 14,
+          "font_size": 22,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         }
       ],
       "speaker_notes": "",
@@ -213,118 +338,253 @@
           "role": "title",
           "text": "研究问题与样本设计",
           "bbox": [
-            0.04,
-            0.08,
-            0.42,
+            0.045,
+            0.11,
+            0.44,
             0.08
           ],
-          "font_size": 30,
+          "font_size": 34,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         },
         {
           "role": "body",
-          "text": "纳入 77 例接受测序的肺癌患者粪便样本。",
+          "text": "纳入 77 例经病理确诊的肺癌患者粪便样本。",
           "bbox": [
-            0.04,
-            0.26,
-            0.39,
-            0.05
+            0.046,
+            0.3,
+            0.47,
+            0.052
           ],
-          "font_size": 15,
+          "font_size": 17,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "其中 52 例具有 PD-L1 TPS 检测结果，\n并按临床标准分为三组：",
           "bbox": [
-            0.04,
-            0.4,
-            0.38,
-            0.08
+            0.046,
+            0.415,
+            0.44,
+            0.095
           ],
-          "font_size": 15,
+          "font_size": 17,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
-          "text": "TPS<1%：n=17",
+          "text": "●  TPS<1%： n=17",
           "bbox": [
-            0.06,
-            0.53,
-            0.22,
-            0.05
+            0.07,
+            0.555,
+            0.3,
+            0.052
           ],
-          "font_size": 15,
-          "bold": false,
-          "color": "#13824b"
+          "font_size": 22,
+          "bold": true,
+          "color": "#15935a",
+          "wrap": false
         },
         {
           "role": "body",
-          "text": "TPS 1-49%：n=18",
+          "text": "●  TPS 1-49%： n=18",
           "bbox": [
-            0.06,
-            0.61,
-            0.25,
-            0.05
+            0.07,
+            0.645,
+            0.33,
+            0.052
           ],
-          "font_size": 15,
-          "bold": false,
-          "color": "#1d61d6"
+          "font_size": 22,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
         },
         {
           "role": "body",
-          "text": "TPS≥50%：n=17",
+          "text": "●  TPS≥50%： n=17",
           "bbox": [
-            0.06,
-            0.69,
-            0.23,
-            0.05
+            0.07,
+            0.735,
+            0.31,
+            0.052
           ],
-          "font_size": 15,
-          "bold": false,
-          "color": "#13824b"
+          "font_size": 22,
+          "bold": true,
+          "color": "#15935a",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "77 例肺癌患者粪便样本",
           "bbox": [
-            0.6,
-            0.09,
+            0.615,
+            0.2,
             0.28,
             0.04
           ],
-          "font_size": 11,
-          "bold": false,
-          "color": "#1d61d6"
+          "font_size": 17,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "52 例具有 PD-L1 TPS 检测结果",
           "bbox": [
-            0.6,
-            0.24,
-            0.28,
+            0.625,
+            0.34,
+            0.34,
             0.04
           ],
-          "font_size": 11,
-          "bold": false,
-          "color": "#1d61d6"
+          "font_size": 17,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
         },
         {
           "role": "body",
-          "text": "核心问题：TPS 分层是否对应肠道微生物组、\nARG 谱和功能通路差异？",
+          "text": "TPS<1%",
           "bbox": [
-            0.1,
-            0.82,
-            0.34,
-            0.06
+            0.552,
+            0.51,
+            0.105,
+            0.04
           ],
-          "font_size": 13,
+          "font_size": 17,
           "bold": true,
-          "color": "#1d61d6"
+          "color": "#ffffff",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "n=17",
+          "bbox": [
+            0.586,
+            0.64,
+            0.07,
+            0.04
+          ],
+          "font_size": 17,
+          "bold": true,
+          "color": "#15935a",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "TPS 1-49%",
+          "bbox": [
+            0.69,
+            0.51,
+            0.125,
+            0.04
+          ],
+          "font_size": 17,
+          "bold": true,
+          "color": "#ffffff",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "n=18",
+          "bbox": [
+            0.735,
+            0.64,
+            0.07,
+            0.04
+          ],
+          "font_size": 17,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "TPS≥50%",
+          "bbox": [
+            0.852,
+            0.51,
+            0.115,
+            0.04
+          ],
+          "font_size": 17,
+          "bold": true,
+          "color": "#ffffff",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "n=17",
+          "bbox": [
+            0.89,
+            0.64,
+            0.07,
+            0.04
+          ],
+          "font_size": 17,
+          "bold": true,
+          "color": "#15935a",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "核心问题： TPS 分层是否对应肠道微生物组、\nARG 谱和功能通路差异？",
+          "bbox": [
+            0.11,
+            0.81,
+            0.4,
+            0.09
+          ],
+          "font_size": 18,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": true
+        },
+        {
+          "role": "body",
+          "text": "肠道微生物组",
+          "bbox": [
+            0.575,
+            0.885,
+            0.15,
+            0.04
+          ],
+          "font_size": 15,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "ARG 谱",
+          "bbox": [
+            0.735,
+            0.885,
+            0.1,
+            0.04
+          ],
+          "font_size": 15,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "功能通路",
+          "bbox": [
+            0.875,
+            0.885,
+            0.12,
+            0.04
+          ],
+          "font_size": 15,
+          "bold": true,
+          "color": "#1267d9",
+          "wrap": false
         }
       ],
       "speaker_notes": "",
@@ -342,91 +602,168 @@
           "text": "分析流程：从宏基因组数据到多维结果",
           "bbox": [
             0.04,
-            0.07,
-            0.6,
-            0.07
+            0.075,
+            0.66,
+            0.09
+          ],
+          "font_size": 42,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "step_number",
+          "text": "1",
+          "bbox": [
+            0.062,
+            0.258,
+            0.045,
+            0.06
           ],
           "font_size": 28,
           "bold": true,
-          "color": "#07143d"
+          "color": "#ffffff",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "粪便样本\nDNA 提取与\nIllumina PE150\n测序",
           "bbox": [
-            0.06,
-            0.16,
             0.1,
-            0.13
+            0.255,
+            0.13,
+            0.15
           ],
-          "font_size": 10,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 17,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": true
+        },
+        {
+          "role": "step_number",
+          "text": "2",
+          "bbox": [
+            0.254,
+            0.258,
+            0.045,
+            0.06
+          ],
+          "font_size": 28,
+          "bold": true,
+          "color": "#ffffff",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "fastp 质控、\nBowtie2 去宿主\n污染",
           "bbox": [
-            0.23,
-            0.16,
-            0.11,
-            0.1
+            0.28,
+            0.255,
+            0.13,
+            0.15
           ],
-          "font_size": 10,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 17,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": true
+        },
+        {
+          "role": "step_number",
+          "text": "3",
+          "bbox": [
+            0.448,
+            0.258,
+            0.045,
+            0.06
+          ],
+          "font_size": 28,
+          "bold": true,
+          "color": "#ffffff",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "GTDB 注释与\nRPKM 标准化",
           "bbox": [
-            0.42,
-            0.17,
-            0.11,
-            0.08
+            0.485,
+            0.255,
+            0.13,
+            0.15
           ],
-          "font_size": 10,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 17,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": true
+        },
+        {
+          "role": "step_number",
+          "text": "4",
+          "bbox": [
+            0.641,
+            0.258,
+            0.045,
+            0.06
+          ],
+          "font_size": 28,
+          "bold": true,
+          "color": "#ffffff",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "多样性、组成、\nLEfSe 与共现\n网络分析",
           "bbox": [
-            0.6,
-            0.16,
-            0.11,
-            0.11
+            0.678,
+            0.255,
+            0.13,
+            0.15
           ],
-          "font_size": 10,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 17,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": true
+        },
+        {
+          "role": "step_number",
+          "text": "5",
+          "bbox": [
+            0.835,
+            0.258,
+            0.045,
+            0.06
+          ],
+          "font_size": 28,
+          "bold": true,
+          "color": "#ffffff",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "ARGs-OAP 与\nHUMAnN3\n功能通路分析",
           "bbox": [
-            0.79,
-            0.16,
-            0.12,
-            0.11
+            0.865,
+            0.255,
+            0.13,
+            0.15
           ],
-          "font_size": 10,
-          "bold": false,
-          "color": "#07143d"
+          "font_size": 17,
+          "bold": true,
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "caption",
           "text": "统计原则：非参数检验 + BH-FDR 校正 + 固定随机种子",
           "bbox": [
             0.12,
-            0.82,
-            0.46,
-            0.05
+            0.835,
+            0.55,
+            0.055
           ],
-          "font_size": 13,
+          "font_size": 22,
           "bold": true,
-          "color": "#1d61d6"
+          "color": "#1267d9",
+          "wrap": false
         }
       ],
       "speaker_notes": "",
@@ -450,7 +787,8 @@
           ],
           "font_size": 30,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -463,7 +801,8 @@
           ],
           "font_size": 13,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         }
       ],
       "speaker_notes": "",
@@ -486,8 +825,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         },
         {
           "path": "wiki/sources/figures/figure_02_page_18.png",
@@ -507,8 +845,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         }
       ],
       "figure_first": true,
@@ -533,7 +870,8 @@
           ],
           "font_size": 26,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         },
         {
           "role": "caption",
@@ -546,7 +884,8 @@
           ],
           "font_size": 10,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         }
       ],
       "speaker_notes": "",
@@ -569,8 +908,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         },
         {
           "path": "wiki/sources/figures/figure_04_page_20.png",
@@ -590,8 +928,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         }
       ],
       "figure_first": true,
@@ -616,7 +953,8 @@
           ],
           "font_size": 30,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -629,7 +967,8 @@
           ],
           "font_size": 13,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         }
       ],
       "speaker_notes": "",
@@ -652,8 +991,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         },
         {
           "path": "wiki/sources/figures/figure_06_page_22.png",
@@ -673,8 +1011,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         }
       ],
       "figure_first": true,
@@ -700,7 +1037,8 @@
           ],
           "font_size": 30,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -713,7 +1051,8 @@
           ],
           "font_size": 13,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         }
       ],
       "speaker_notes": "",
@@ -736,8 +1075,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         }
       ],
       "figure_first": true,
@@ -762,7 +1100,8 @@
           ],
           "font_size": 30,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -775,7 +1114,8 @@
           ],
           "font_size": 13,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         }
       ],
       "speaker_notes": "",
@@ -798,8 +1138,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         },
         {
           "path": "wiki/sources/figures/figure_09_page_26.png",
@@ -819,8 +1158,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         }
       ],
       "figure_first": true,
@@ -845,7 +1183,8 @@
           ],
           "font_size": 30,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -858,7 +1197,8 @@
           ],
           "font_size": 13,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         }
       ],
       "speaker_notes": "",
@@ -881,8 +1221,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         },
         {
           "path": "wiki/sources/figures/figure_11_page_28.png",
@@ -902,8 +1241,7 @@
           "draw_frame": false,
           "trim_whitespace": true,
           "panel_aspect_from_source": true,
-          "panel_aspect_tolerance": 0.08,
-          "detect_panel": false
+          "panel_aspect_tolerance": 0.08
         }
       ],
       "figure_first": true,
@@ -929,7 +1267,8 @@
           ],
           "font_size": 30,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         },
         {
           "role": "body",
@@ -942,7 +1281,8 @@
           ],
           "font_size": 22,
           "bold": true,
-          "color": "#ffffff"
+          "color": "#ffffff",
+          "wrap": false
         },
         {
           "role": "body",
@@ -955,7 +1295,8 @@
           ],
           "font_size": 11,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -968,7 +1309,8 @@
           ],
           "font_size": 11,
           "bold": true,
-          "color": "#1d61d6"
+          "color": "#1d61d6",
+          "wrap": false
         },
         {
           "role": "body",
@@ -981,7 +1323,8 @@
           ],
           "font_size": 9,
           "bold": true,
-          "color": "#1d61d6"
+          "color": "#1d61d6",
+          "wrap": true
         },
         {
           "role": "body",
@@ -994,7 +1337,8 @@
           ],
           "font_size": 12,
           "bold": true,
-          "color": "#1d61d6"
+          "color": "#1d61d6",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1007,7 +1351,8 @@
           ],
           "font_size": 10,
           "bold": true,
-          "color": "#1d61d6"
+          "color": "#1d61d6",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1020,7 +1365,8 @@
           ],
           "font_size": 20,
           "bold": true,
-          "color": "#ffffff"
+          "color": "#ffffff",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1033,7 +1379,8 @@
           ],
           "font_size": 11,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1046,7 +1393,8 @@
           ],
           "font_size": 11,
           "bold": true,
-          "color": "#12824b"
+          "color": "#12824b",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1059,7 +1407,8 @@
           ],
           "font_size": 8,
           "bold": true,
-          "color": "#12824b"
+          "color": "#12824b",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1072,7 +1421,8 @@
           ],
           "font_size": 12,
           "bold": true,
-          "color": "#12824b"
+          "color": "#12824b",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1085,7 +1435,8 @@
           ],
           "font_size": 10,
           "bold": true,
-          "color": "#12824b"
+          "color": "#12824b",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1098,7 +1449,8 @@
           ],
           "font_size": 22,
           "bold": true,
-          "color": "#ffffff"
+          "color": "#ffffff",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1111,7 +1463,8 @@
           ],
           "font_size": 11,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1124,7 +1477,8 @@
           ],
           "font_size": 11,
           "bold": true,
-          "color": "#ee7300"
+          "color": "#ee7300",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1137,7 +1491,8 @@
           ],
           "font_size": 8,
           "bold": true,
-          "color": "#ee7300"
+          "color": "#ee7300",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1150,7 +1505,8 @@
           ],
           "font_size": 12,
           "bold": true,
-          "color": "#ee7300"
+          "color": "#ee7300",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1163,7 +1519,8 @@
           ],
           "font_size": 9,
           "bold": true,
-          "color": "#ee7300"
+          "color": "#ee7300",
+          "wrap": true
         },
         {
           "role": "subtitle",
@@ -1176,7 +1533,8 @@
           ],
           "font_size": 16,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         }
       ],
       "speaker_notes": "",
@@ -1201,7 +1559,8 @@
           ],
           "font_size": 32,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1214,7 +1573,8 @@
           ],
           "font_size": 14,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1227,7 +1587,8 @@
           ],
           "font_size": 14,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "caption",
@@ -1240,7 +1601,8 @@
           ],
           "font_size": 14,
           "bold": true,
-          "color": "#1d61d6"
+          "color": "#1d61d6",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1253,7 +1615,8 @@
           ],
           "font_size": 12,
           "bold": true,
-          "color": "#13824b"
+          "color": "#13824b",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1266,7 +1629,8 @@
           ],
           "font_size": 12,
           "bold": true,
-          "color": "#1d61d6"
+          "color": "#1d61d6",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1279,7 +1643,8 @@
           ],
           "font_size": 12,
           "bold": true,
-          "color": "#1d61d6"
+          "color": "#1d61d6",
+          "wrap": true
         }
       ],
       "speaker_notes": "",
@@ -1299,64 +1664,139 @@
           "bbox": [
             0.04,
             0.12,
-            0.43,
+            0.46,
             0.08
           ],
-          "font_size": 36,
+          "font_size": 44,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "局限性",
           "bbox": [
-            0.2,
-            0.29,
-            0.17,
+            0.155,
+            0.34,
+            0.18,
             0.06
           ],
-          "font_size": 28,
+          "font_size": 36,
           "bold": true,
-          "color": "#1d61d6"
-        },
-        {
-          "role": "body",
-          "text": "每组仅 17-18 例，统计效力有限\n单中心横断面研究，无法判断因果方向\n饮食、用药、BMI 等混杂因素未充分纳入\n尚未整合实际免疫治疗应答数据",
-          "bbox": [
-            0.14,
-            0.46,
-            0.34,
-            0.3
-          ],
-          "font_size": 16,
-          "bold": false,
-          "color": "#07143d"
+          "color": "#1267d9",
+          "wrap": false
         },
         {
           "role": "body",
           "text": "后续工作",
           "bbox": [
             0.62,
-            0.29,
+            0.34,
             0.22,
             0.06
           ],
-          "font_size": 28,
+          "font_size": 36,
           "bold": true,
-          "color": "#14824b"
+          "color": "#15935a",
+          "wrap": false
         },
         {
           "role": "body",
-          "text": "建立多中心前瞻性纵向队列\n纳入临床应答结局构建预测模型\n用宏转录组、代谢组和动物实验验证关键菌种功能",
+          "text": "每组仅 17-18 例，统计效力有限",
+          "bbox": [
+            0.11,
+            0.5,
+            0.4,
+            0.045
+          ],
+          "font_size": 20,
+          "bold": false,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "单中心横断面研究，无法判断因果方向",
+          "bbox": [
+            0.11,
+            0.595,
+            0.42,
+            0.045
+          ],
+          "font_size": 20,
+          "bold": false,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "饮食、用药、BMI 等混杂因素未充分纳入",
+          "bbox": [
+            0.11,
+            0.69,
+            0.44,
+            0.045
+          ],
+          "font_size": 20,
+          "bold": false,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "尚未整合实际免疫治疗应答数据",
+          "bbox": [
+            0.11,
+            0.785,
+            0.4,
+            0.045
+          ],
+          "font_size": 20,
+          "bold": false,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "建立多中心前瞻性纵向队列",
           "bbox": [
             0.58,
-            0.46,
+            0.5,
             0.35,
-            0.24
+            0.045
           ],
-          "font_size": 16,
+          "font_size": 20,
           "bold": false,
-          "color": "#111111"
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "纳入临床应答结局构建预测模型",
+          "bbox": [
+            0.58,
+            0.595,
+            0.38,
+            0.045
+          ],
+          "font_size": 20,
+          "bold": false,
+          "color": "#07143d",
+          "wrap": false
+        },
+        {
+          "role": "body",
+          "text": "用宏转录组、代谢组和动物实验验证关键菌种功能",
+          "bbox": [
+            0.58,
+            0.69,
+            0.45,
+            0.045
+          ],
+          "font_size": 20,
+          "bold": false,
+          "color": "#07143d",
+          "wrap": false
         }
       ],
       "speaker_notes": "",
@@ -1381,7 +1821,8 @@
           ],
           "font_size": 40,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         },
         {
           "role": "body",
@@ -1394,7 +1835,8 @@
           ],
           "font_size": 16,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1407,7 +1849,8 @@
           ],
           "font_size": 16,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "body",
@@ -1420,7 +1863,8 @@
           ],
           "font_size": 16,
           "bold": false,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": true
         },
         {
           "role": "subtitle",
@@ -1433,7 +1877,8 @@
           ],
           "font_size": 26,
           "bold": true,
-          "color": "#07143d"
+          "color": "#07143d",
+          "wrap": false
         }
       ],
       "speaker_notes": "",

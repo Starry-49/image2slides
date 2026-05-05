@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-05-05T01:15:03.566351+00:00",
+  "created_at": "2026-05-05T03:16:19.760174+00:00",
   "issue_count": 0,
   "issues": [],
   "layers": [
@@ -50,6 +50,7 @@
         0.3897569444444444
       ],
       "detected_panel_bbox": null,
+      "rejected_detected_panel_bbox": null,
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,
@@ -117,6 +118,7 @@
         0.9019097222222222
       ],
       "detected_panel_bbox": null,
+      "rejected_detected_panel_bbox": null,
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,
@@ -148,34 +150,34 @@
         0.74
       ],
       "paste_bbox": [
-        0.0751953125,
-        0.23524305555555555,
-        0.4453125,
-        0.7239583333333334
+        0.05078125,
+        0.16145833333333334,
+        0.47314453125,
+        0.7196180555555556
       ],
       "fit_bbox": [
-        0.0751953125,
-        0.23524305555555555,
-        0.4453125,
-        0.7239583333333334
+        0.0458984375,
+        0.16145833333333334,
+        0.47802734375,
+        0.7196180555555556
       ],
       "panel_bbox": [
-        0.06640625,
-        0.21961805555555555,
-        0.4541015625,
-        0.7395833333333334
+        0.037109375,
+        0.14583333333333334,
+        0.48681640625,
+        0.7352430555555556
       ],
       "visible_panel_bbox": [
-        0.06640625,
-        0.21961805555555555,
-        0.4541015625,
-        0.7395833333333334
+        0.037109375,
+        0.14583333333333334,
+        0.48681640625,
+        0.7352430555555556
       ],
       "actual_panel_bbox": [
-        0.06640625,
-        0.21961805555555555,
-        0.4541015625,
-        0.7395833333333334
+        0.037109375,
+        0.14583333333333334,
+        0.48681640625,
+        0.7352430555555556
       ],
       "declared_panel_bbox": [
         0.06640625,
@@ -183,7 +185,13 @@
         0.4541015625,
         0.7395833333333334
       ],
-      "detected_panel_bbox": null,
+      "detected_panel_bbox": [
+        0.037109375,
+        0.14583333333333334,
+        0.48681640625,
+        0.7352430555555556
+      ],
+      "rejected_detected_panel_bbox": null,
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,
@@ -192,11 +200,11 @@
         737
       ],
       "source_aspect_ratio": 1.346,
-      "visible_panel_aspect_ratio": 1.32554,
-      "visible_inset_aspect_ratio": 1.34636,
-      "panel_aspect_error": 0.00027,
+      "visible_panel_aspect_ratio": 1.35641,
+      "visible_inset_aspect_ratio": 1.37636,
+      "panel_aspect_error": 0.02256,
       "slack_px": [
-        0,
+        20,
         0
       ],
       "center_delta_px": [
@@ -215,34 +223,34 @@
         0.74
       ],
       "paste_bbox": [
-        0.544921875,
-        0.23524305555555555,
-        0.9150390625,
-        0.7239583333333334
+        0.5234375,
+        0.16145833333333334,
+        0.94580078125,
+        0.7196180555555556
       ],
       "fit_bbox": [
-        0.544921875,
-        0.23524305555555555,
-        0.9150390625,
-        0.7239583333333334
+        0.515625,
+        0.16145833333333334,
+        0.9541015625,
+        0.7196180555555556
       ],
       "panel_bbox": [
-        0.5361328125,
-        0.21961805555555555,
-        0.923828125,
-        0.7395833333333334
+        0.5068359375,
+        0.14583333333333334,
+        0.962890625,
+        0.7352430555555556
       ],
       "visible_panel_bbox": [
-        0.5361328125,
-        0.21961805555555555,
-        0.923828125,
-        0.7395833333333334
+        0.5068359375,
+        0.14583333333333334,
+        0.962890625,
+        0.7352430555555556
       ],
       "actual_panel_bbox": [
-        0.5361328125,
-        0.21961805555555555,
-        0.923828125,
-        0.7395833333333334
+        0.5068359375,
+        0.14583333333333334,
+        0.962890625,
+        0.7352430555555556
       ],
       "declared_panel_bbox": [
         0.5361328125,
@@ -250,7 +258,13 @@
         0.923828125,
         0.7395833333333334
       ],
-      "detected_panel_bbox": null,
+      "detected_panel_bbox": [
+        0.5068359375,
+        0.14583333333333334,
+        0.962890625,
+        0.7352430555555556
+      ],
+      "rejected_detected_panel_bbox": null,
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,
@@ -259,15 +273,15 @@
         737
       ],
       "source_aspect_ratio": 1.346,
-      "visible_panel_aspect_ratio": 1.32554,
-      "visible_inset_aspect_ratio": 1.34636,
-      "panel_aspect_error": 0.00027,
+      "visible_panel_aspect_ratio": 1.37555,
+      "visible_inset_aspect_ratio": 1.39658,
+      "panel_aspect_error": 0.03758,
       "slack_px": [
-        0,
+        33,
         0
       ],
       "center_delta_px": [
-        0.0,
+        -0.5,
         0.0
       ]
     },
@@ -318,6 +332,12 @@
         0.5598958333333334
       ],
       "detected_panel_bbox": null,
+      "rejected_detected_panel_bbox": [
+        0.5947265625,
+        0.059895833333333336,
+        0.83740234375,
+        0.6684027777777778
+      ],
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,
@@ -385,6 +405,12 @@
         0.9053819444444444
       ],
       "detected_panel_bbox": null,
+      "rejected_detected_panel_bbox": [
+        0.5947265625,
+        0.6675347222222222,
+        0.83740234375,
+        0.9383680555555556
+      ],
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,
@@ -452,6 +478,7 @@
         0.8029513888888888
       ],
       "detected_panel_bbox": null,
+      "rejected_detected_panel_bbox": null,
       "draw_frame": false,
       "margin_px": 20,
       "panel_aspect_from_source": true,
@@ -483,34 +510,34 @@
         0.47
       ],
       "paste_bbox": [
-        0.58642578125,
-        0.13541666666666666,
-        0.91357421875,
-        0.4539930555555556
+        0.595703125,
+        0.1111111111111111,
+        0.943359375,
+        0.4496527777777778
       ],
       "fit_bbox": [
-        0.58642578125,
-        0.13541666666666666,
-        0.91357421875,
-        0.4539930555555556
+        0.5908203125,
+        0.1111111111111111,
+        0.9482421875,
+        0.4496527777777778
       ],
       "panel_bbox": [
-        0.57763671875,
-        0.11979166666666667,
-        0.92236328125,
-        0.4696180555555556
+        0.58203125,
+        0.0954861111111111,
+        0.95703125,
+        0.4652777777777778
       ],
       "visible_panel_bbox": [
-        0.57763671875,
-        0.11979166666666667,
-        0.92236328125,
-        0.4696180555555556
+        0.58203125,
+        0.0954861111111111,
+        0.95703125,
+        0.4652777777777778
       ],
       "actual_panel_bbox": [
-        0.57763671875,
-        0.11979166666666667,
-        0.92236328125,
-        0.4696180555555556
+        0.58203125,
+        0.0954861111111111,
+        0.95703125,
+        0.4652777777777778
       ],
       "declared_panel_bbox": [
         0.57763671875,
@@ -518,7 +545,13 @@
         0.92236328125,
         0.4696180555555556
       ],
-      "detected_panel_bbox": null,
+      "detected_panel_bbox": [
+        0.58203125,
+        0.0954861111111111,
+        0.95703125,
+        0.4652777777777778
+      ],
+      "rejected_detected_panel_bbox": null,
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,
@@ -527,11 +560,11 @@
         547
       ],
       "source_aspect_ratio": 1.82633,
-      "visible_panel_aspect_ratio": 1.75186,
-      "visible_inset_aspect_ratio": 1.82561,
-      "panel_aspect_error": 0.00039,
+      "visible_panel_aspect_ratio": 1.80282,
+      "visible_inset_aspect_ratio": 1.87692,
+      "panel_aspect_error": 0.0277,
       "slack_px": [
-        0,
+        20,
         0
       ],
       "center_delta_px": [
@@ -586,6 +619,7 @@
         0.9817708333333334
       ],
       "detected_panel_bbox": null,
+      "rejected_detected_panel_bbox": null,
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,
@@ -653,6 +687,12 @@
         0.4548611111111111
       ],
       "detected_panel_bbox": null,
+      "rejected_detected_panel_bbox": [
+        0.56005859375,
+        0.08333333333333333,
+        0.8720703125,
+        0.4583333333333333
+      ],
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,
@@ -720,6 +760,7 @@
         0.9600694444444444
       ],
       "detected_panel_bbox": null,
+      "rejected_detected_panel_bbox": null,
       "draw_frame": false,
       "margin_px": 18,
       "panel_aspect_from_source": true,

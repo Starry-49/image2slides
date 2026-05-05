@@ -1068,6 +1068,44 @@ def fit_source_bounds(source_size: Tuple[int, int], box: Tuple[int, int, int, in
     return px, py, px + fitted_w, py + fitted_h
 
 
+def clear_panel_interior(
+    image: "Image.Image",
+    boxes: Sequence[Tuple[int, int, int, int]],
+    *,
+    fill: Tuple[int, int, int] = (255, 255, 255),
+    keep_border_px: int = 6,
+) -> None:
+    """Clear a detection-only copy while preserving the generated panel edge."""
+    draw = ImageDraw.Draw(image)  # type: ignore[name-defined]
+    width, height = image.size
+    for box in boxes:
+        x0, y0, x1, y1 = clamp_box(box, width, height)
+        border = max(0, int(keep_border_px))
+        inner = (x0 + border, y0 + border, x1 - border, y1 - border)
+        if inner[2] <= inner[0] or inner[3] <= inner[1]:
+            continue
+        draw.rectangle(inner, fill=fill)
+
+
+def source_panel_detection_reference(
+    slide: Dict[str, Any],
+    image: "Image.Image",
+    image_size: Tuple[int, int],
+) -> "Image.Image":
+    """Return a source-free copy for detecting generated panel borders."""
+    reference = image.copy()
+    width, height = image_size
+    for layer in slide.get("source_layers", []):
+        if bool_option(layer.get("draw_frame"), False):
+            continue
+        try:
+            declared = layer_panel_box(layer, width, height)
+        except Exception:
+            continue
+        clear_panel_interior(reference, [declared], keep_border_px=int(layer.get("panel_border_keep_px", 6)))
+    return reference
+
+
 def layer_margin_px(layer: Dict[str, Any], *, has_panel: bool) -> int:
     for key in ("fit_margin_px", "panel_margin_px", "padding_px"):
         if key in layer:
@@ -1104,11 +1142,19 @@ def source_fit_geometry(
             reference = reference.resize(image_size, Image.Resampling.LANCZOS)
         detected_panel = detect_panel_box_from_image(reference, declared_panel)
 
+    rejected_detected_panel = None
+    if detected_panel is not None and panel_aspect_from_source(layer):
+        declared_error = panel_inset_ratio_error(declared_panel, source_size, margin)
+        detected_error = panel_inset_ratio_error(detected_panel, source_size, margin)
+        detection_aspect_tolerance = float(
+            layer.get("panel_detection_aspect_tolerance", layer.get("panel_aspect_tolerance", 0.08))
+        )
+        if detected_error > detection_aspect_tolerance and declared_error + 0.02 < detected_error:
+            rejected_detected_panel = detected_panel
+            detected_panel = None
+
     actual_panel = detected_panel or declared_panel
     panel = actual_panel
-    if panel_aspect_from_source(layer):
-        panel = aspect_adjusted_panel_box(actual_panel, source_size, margin)
-        panel = clamp_box(panel, width, height)
     fit_region = inset_box(panel, margin)
     paste_box = fit_source_bounds(source_size, fit_region)
     fit_w = max(1, fit_region[2] - fit_region[0])
@@ -1122,6 +1168,7 @@ def source_fit_geometry(
         "actual_panel_box": actual_panel,
         "declared_panel_box": declared_panel,
         "detected_panel_box": detected_panel,
+        "rejected_detected_panel_box": rejected_detected_panel,
         "fit_region": fit_region,
         "paste_box": paste_box,
         "source_size": source_size,
@@ -1300,6 +1347,16 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
     spec = load_project(project)
     previous_provenance = validate_completed_provenance(project, spec)
     previous_background_provenance = validate_background_provenance(project, spec)
+    previous_method = str(previous_provenance.get("method"))
+    previous_background_method = str(previous_background_provenance.get("method"))
+    already_source_locked = previous_method.endswith("_with_source_locked_patch") or previous_background_method.endswith(
+        "_with_source_locked_patch"
+    )
+    if already_source_locked and not bool(getattr(args, "force", False)):
+        die(
+            "This image pair is already source-locked. Refusing to mutate generated completed/background images again; "
+            "restore a clean pre-source-lock image_gen checkpoint or rerun with --force only after deliberate review."
+        )
     plan = slide_plan(project)
     width, height = parse_image_size(spec["image_size"])
 
@@ -1321,7 +1378,9 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
         if background.size != (width, height):
             background = background.resize((width, height), Image.Resampling.LANCZOS)
         panel_reference = load_native_panel_reference(project, slide_no, (width, height)) or background
+        detection_reference = source_panel_detection_reference(slide, panel_reference, (width, height))
 
+        layer_geometries: List[Tuple[Dict[str, Any], Path, Dict[str, Any], bool]] = []
         for layer in slide.get("source_layers", []):
             raw_path = str(layer.get("path", "")).strip()
             if not raw_path:
@@ -1330,19 +1389,29 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
             if not source_path.exists():
                 die(f"source layer not found for slide {slide_no}: {source_path}")
             draw_frame = bool_option(layer.get("draw_frame"), False)
+            if not draw_frame and not panel_detection_enabled(layer):
+                die(
+                    f"source layer panel detection is disabled for slide {slide_no}; "
+                    "generated panels must be located from their actual edges before source insertion"
+                )
             geometry = source_fit_geometry(
                 project,
                 layer,
                 (width, height),
                 draw_frame=draw_frame,
-                panel_image=panel_reference,
+                panel_image=detection_reference,
             )
+            layer_geometries.append((layer, source_path, geometry, draw_frame))
+
+        for layer, _source_path, geometry, draw_frame in layer_geometries:
             box = geometry["panel_box"]
             radius = int(layer.get("radius_px", 24))
             if draw_frame:
                 for image in (completed, background):
                     draw = ImageDraw.Draw(image)  # type: ignore[name-defined]
                     draw.rounded_rectangle(box, radius=radius, fill=(255, 255, 255), outline=rgb("#d9e3ef"), width=2)
+
+        for layer, source_path, geometry, draw_frame in layer_geometries:
             paste_source_image(
                 completed,
                 project,
@@ -1365,7 +1434,6 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
         completed.save(completed_path)
         background.save(background_path)
 
-    previous_method = str(previous_provenance.get("method"))
     patch_methods = {
         "api_imagegen_cli": "api_imagegen_cli_with_source_locked_patch",
         "registered_native_image_gen": "registered_native_image_gen_with_source_locked_patch",
@@ -1380,7 +1448,6 @@ def cmd_compose_source_locked(args: argparse.Namespace) -> None:
         note="Exact source_layers were pasted onto existing image_gen completed/background pairs; no local text composition was used.",
         previous=previous_provenance,
     )
-    previous_background_method = str(previous_background_provenance.get("method"))
     background_patch_methods = {
         "api_imagegen_cli_edit": "api_imagegen_cli_edit_with_source_locked_patch",
         "registered_native_image_gen_edit": "registered_native_image_gen_edit_with_source_locked_patch",
@@ -1805,11 +1872,13 @@ def choose_regions(analysis: Dict[str, Any], count: int) -> List[List[float]]:
     return chosen
 
 
-def text_box_xml(shape_id: int, text: str, bbox: Sequence[float], slide_w: float, slide_h: float, font_size: float, color: str, bold: bool, name: str) -> str:
+def text_box_xml(shape_id: int, text: str, bbox: Sequence[float], slide_w: float, slide_h: float, font_size: float, color: str, bold: bool, name: str, wrap: Optional[bool] = None) -> str:
     x, y, w, h = bbox_to_inches(bbox, slide_w, slide_h)
     size = max(600, int(round(font_size * 100)))
     bold_attr = ' b="1"' if bold else ""
     paragraphs = str(text).splitlines() or [""]
+    should_wrap = bool(wrap) if wrap is not None else len(paragraphs) > 1
+    wrap_attr = "square" if should_wrap else "none"
     runs = []
     for idx, para in enumerate(paragraphs):
         bullet = ""
@@ -1834,7 +1903,7 @@ def text_box_xml(shape_id: int, text: str, bbox: Sequence[float], slide_w: float
           <a:xfrm><a:off x="{emu(x)}" y="{emu(y)}"/><a:ext cx="{emu(w)}" cy="{emu(h)}"/></a:xfrm>
           <a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln>
         </p:spPr>
-        <p:txBody><a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t"><a:noAutofit/></a:bodyPr><a:lstStyle/>{body}</p:txBody>
+        <p:txBody><a:bodyPr wrap="{wrap_attr}" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t"><a:noAutofit/></a:bodyPr><a:lstStyle/>{body}</p:txBody>
       </p:sp>
 """
 
@@ -2056,6 +2125,7 @@ def build_pptx(project: Path, out_path: Path) -> None:
                         str(color),
                         bool(item.get("bold", role == "title")),
                         f"{role}-{idx + 1}",
+                        bool_option(item.get("wrap"), len(str(item.get("text", "")).splitlines()) > 1),
                     )
                 )
             pptx.writestr(f"ppt/slides/slide{i}.xml", slide_xml("rId1", "".join(text_parts)))
@@ -2277,6 +2347,15 @@ def relative_ratio_error(observed: float, expected: float) -> float:
     return abs(observed - expected) / max(expected, 0.0001)
 
 
+def panel_inset_ratio_error(
+    panel: Tuple[int, int, int, int],
+    source_size: Tuple[int, int],
+    margin_px: int,
+) -> float:
+    source_ratio = source_size[0] / max(1, source_size[1])
+    return relative_ratio_error(box_ratio(inset_box(panel, margin_px)), source_ratio)
+
+
 def source_layer_paste_rect(
     project: Path,
     layer: Dict[str, Any],
@@ -2314,6 +2393,11 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
     for slide in plan.get("slides", []):
         slide_no = int(slide["slide"])
         panel_reference = load_native_panel_reference(project, slide_no, image_size) or load_background_panel_reference(project, slide_no, image_size)
+        detection_reference = (
+            source_panel_detection_reference(slide, panel_reference, image_size)
+            if panel_reference is not None
+            else None
+        )
         text_rects = []
         layer_rects_for_slide: List[Dict[str, Any]] = []
         text_area = 0.0
@@ -2325,7 +2409,7 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
         for idx, layer in enumerate(slide.get("source_layers", []), start=1):
             layer_rect = unit_rect(layer.get("bbox", []))
             draw_frame = bool_option(layer.get("draw_frame"), False)
-            geometry = source_fit_geometry(project, layer, image_size, draw_frame=draw_frame, panel_image=panel_reference)
+            geometry = source_fit_geometry(project, layer, image_size, draw_frame=draw_frame, panel_image=detection_reference)
             width, height = image_size
             paste_rect = pixels_to_unit_rect(geometry["paste_box"], width, height)
             fit_rect = pixels_to_unit_rect(geometry["fit_region"], width, height)
@@ -2340,7 +2424,11 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
             visible_fit_ratio = box_ratio(visible_fit_box)
             panel_aspect_error = relative_ratio_error(visible_fit_ratio, source_ratio)
             detected_panel = geometry.get("detected_panel_box")
+            rejected_detected_panel = geometry.get("rejected_detected_panel_box")
             detected_panel_rect = pixels_to_unit_rect(detected_panel, width, height) if detected_panel else None
+            rejected_detected_panel_rect = (
+                pixels_to_unit_rect(rejected_detected_panel, width, height) if rejected_detected_panel else None
+            )
             row = {
                 "slide": slide_no,
                 "layer": idx,
@@ -2353,6 +2441,7 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
                 "actual_panel_bbox": list(actual_panel_rect),
                 "declared_panel_bbox": list(declared_panel_rect),
                 "detected_panel_bbox": list(detected_panel_rect) if detected_panel_rect else None,
+                "rejected_detected_panel_bbox": list(rejected_detected_panel_rect) if rejected_detected_panel_rect else None,
                 "draw_frame": draw_frame,
                 "margin_px": geometry["margin_px"],
                 "panel_aspect_from_source": geometry["panel_aspect_from_source"],
@@ -2375,12 +2464,42 @@ def audit_source_layers(project: Path) -> Dict[str, Any]:
 
             if not rect_inside(layer_rect, (0.0, 0.0, 1.0, 1.0), tolerance=0.0):
                 issues.append({"slide": slide_no, "layer": idx, "kind": "out_of_slide", "message": "source layer bbox is outside the slide"})
+            if panel_reference is not None and not draw_frame and not panel_detection_enabled(layer):
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": idx,
+                        "kind": "panel_detection_disabled",
+                        "message": "generated source panels must use detected panel edges; `detect_panel: false` bypasses the four-edge fitting algorithm",
+                    }
+                )
             if not rect_inside(paste_rect, actual_panel_rect, tolerance=0.002):
                 issues.append({"slide": slide_no, "layer": idx, "kind": "outside_actual_panel", "message": "source image paste area is not fully inside the detected or declared panel"})
             if not rect_inside(paste_rect, panel_rect, tolerance=0.002):
                 issues.append({"slide": slide_no, "layer": idx, "kind": "outside_aspect_panel", "message": "source image paste area is not fully inside the source-aspect panel"})
             if not rect_inside(paste_rect, fit_rect, tolerance=0.004):
                 issues.append({"slide": slide_no, "layer": idx, "kind": "margin_violation", "message": "source image paste area is not inside the panel inset by margin d"})
+            clearance = [
+                paste_rect[0] - actual_panel_rect[0],
+                paste_rect[1] - actual_panel_rect[1],
+                actual_panel_rect[2] - paste_rect[2],
+                actual_panel_rect[3] - paste_rect[3],
+            ]
+            required_clearance = [
+                geometry["margin_px"] / width,
+                geometry["margin_px"] / height,
+                geometry["margin_px"] / width,
+                geometry["margin_px"] / height,
+            ]
+            if any(observed + 0.001 < required for observed, required in zip(clearance, required_clearance)):
+                issues.append(
+                    {
+                        "slide": slide_no,
+                        "layer": idx,
+                        "kind": "panel_margin_violation",
+                        "message": "source image is not inset from all four detected panel edges by the configured margin d",
+                    }
+                )
             if max(abs(float(v)) for v in geometry["center_delta_px"]) > 1.0:
                 issues.append({"slide": slide_no, "layer": idx, "kind": "center_misaligned", "message": "source image center is not aligned with the inset panel center"})
             if native_base_present and draw_frame:
@@ -2651,6 +2770,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("compose-source-locked", help="Patch exact source figures into existing image_gen completed/background refs")
     p.add_argument("--project", required=True)
     p.add_argument("--base-dir", help=argparse.SUPPRESS)
+    p.add_argument("--force", action="store_true", help="Allow re-patching an already source-locked image pair")
     p.set_defaults(func=cmd_compose_source_locked)
 
     p = sub.add_parser("audit-layout", help="Audit source layers for panel placement, duplicate frames, and text overlap")
