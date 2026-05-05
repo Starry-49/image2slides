@@ -69,16 +69,17 @@
       <div class="section-head">
         <p class="kicker">Workflow</p>
         <h2>From required inputs to a reviewed deck.</h2>
-        <p>The pipeline separates planning, factual boundaries, image generation, deterministic composition, and final inspection.</p>
+        <p>The v1 pipeline keeps the two GPT-image-2 batches explicit: completed references first, text-free background edits second, then deterministic PowerPoint assembly and boundary-aware QA.</p>
       </div>
       <img class="workflow-visual" src="assets/workflow-diagram.svg" alt="Image2Slides workflow diagram">
       <div class="timeline">
-        <div><b>1</b><span>Require tone, aspect ratio, slide count, purpose, scene, and knowledge base.</span></div>
-        <div><b>2</b><span>Write the wiki structure, source registry, and grep/generate boundary before prompt work.</span></div>
-        <div><b>3</b><span>Use GPT-image-2 for visual bases and reserve panels that match source-image proportions.</span></div>
-        <div><b>4</b><span>Compose exact source figures, detect native panel edges, and mark source panels as non-editable boundaries.</span></div>
-        <div><b>5</b><span>Audit blank zones, forbidden source/illustration zones, and editable text-fill regions with overlays.</span></div>
-        <div><b>6</b><span>Build editable PPTX, run strict QA, then export the accepted PowerPoint to PDF.</span></div>
+        <div><b>1</b><span>Require tone, ratio, count, purpose, scene, and knowledge base before artifacts are created.</span></div>
+        <div><b>2</b><span>Write the wiki, source registry, slide plan, and grep/generate content boundary.</span></div>
+        <div><b>3</b><span>Generate GPT-image-2 completed slide references with visible text.</span></div>
+        <div><b>4</b><span>Edit each completed image into a matching text-free background with identical geometry.</span></div>
+        <div><b>5</b><span>Source-lock exact figures into detected panels and mark those panels non-editable.</span></div>
+        <div><b>6</b><span>Analyze text/blank regions, build editable PowerPoint text over backgrounds.</span></div>
+        <div><b>7</b><span>Render, run pixel/patch comparison, audit blank-zone boundaries, then export the reviewed PDF.</span></div>
       </div>
     </section>
 
@@ -100,16 +101,20 @@ knowledge_base: ./howitworks
 image2slides init --project decks/my-deck --spec spec.json
 image2slides queue --project decks/my-deck
 
-# after Codex native image_gen saves GPT-image-2 bases:
-image2slides compose-source-locked \
-  --project decks/my-deck \
-  --base-dir tmp/native_imagegen
+# after Codex native image_gen saves completed refs:
+image2slides register-completed --project decks/my-deck
 
+# after GPT-image-2 edits text-free backgrounds:
+image2slides register-background --project decks/my-deck
+
+image2slides compose-source-locked --project decks/my-deck
 image2slides audit-layout --project decks/my-deck --strict
-image2slides audit-boundaries --project decks/my-deck
 image2slides analyze --project decks/my-deck
 image2slides build-pptx --project decks/my-deck
-image2slides qa --project decks/my-deck --strict</code></pre>
+image2slides qa --project decks/my-deck --strict
+
+# optional stricter blank-zone gate:
+image2slides qa --project decks/my-deck --boundary-strict</code></pre>
       </div>
     </section>
 

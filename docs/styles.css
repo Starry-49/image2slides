@@ -47,6 +47,18 @@ code {
   font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 
+p code,
+li code {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.05);
+  color: #56565c;
+  font-size: 0.92em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .nav {
   position: sticky;
   top: 14px;
@@ -235,6 +247,7 @@ code {
 .boundary-grid article,
 .io-grid article,
 .example-grid article {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -293,7 +306,7 @@ li {
 
 .timeline {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-top: 22px;
 }
@@ -340,13 +353,17 @@ pre {
 
 pre code {
   color: #e5edf8;
+  background: transparent;
+  padding: 0;
   font-size: 14px;
   line-height: 1.7;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
-.wiki-grid,
-.io-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.wiki-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .io-grid {

@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
-  <title id="title">Image2Slides workflow</title>
-  <desc id="desc">A clean workflow diagram showing required input, wiki boundary, GPT-image-2 visual bases, source-locked composition, analysis, editable PPTX, QA, and human review.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 820" role="img" aria-labelledby="title desc">
+  <title id="title">Image2Slides v1 workflow</title>
+  <desc id="desc">A clean workflow diagram showing required inputs, wiki boundaries, GPT-image-2 completed references, text-free background edits, source locking, editable PowerPoint build, and QA plus PDF review.</desc>
   <defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0" stop-color="#fbfbfd"/>
-      <stop offset="1" stop-color="#edf4ff"/>
+      <stop offset="1" stop-color="#eef5ff"/>
     </linearGradient>
     <linearGradient id="blue" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0" stop-color="#0a84ff"/>
@@ -13,86 +13,101 @@
     <filter id="shadow" x="-20%" y="-30%" width="140%" height="160%">
       <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#0f172a" flood-opacity="0.12"/>
     </filter>
+    <style>
+      .title { font: 700 34px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; fill: #111827; }
+      .subtitle { font: 400 18px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; fill: #667085; }
+      .card-title { font: 700 18px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; fill: #111827; }
+      .card-copy { font: 400 14px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; fill: #667085; }
+      .num { font: 700 14px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; fill: #ffffff; }
+    </style>
   </defs>
-  <rect width="1400" height="760" rx="42" fill="url(#bg)"/>
-  <path d="M68 120 C240 36 375 68 520 126 C673 188 816 178 973 103 C1128 29 1241 40 1332 90" fill="none" stroke="#cfe3ff" stroke-width="3"/>
-  <path d="M86 604 C241 525 395 552 546 617 C695 681 812 685 960 624 C1127 555 1252 566 1335 631" fill="none" stroke="#d8e8fb" stroke-width="3"/>
-  <g font-family="-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Arial,sans-serif">
-    <text x="82" y="82" fill="#111827" font-size="34" font-weight="700">Image2Slides workflow</text>
-    <text x="82" y="120" fill="#667085" font-size="18">from required intent and source material to editable PowerPoint with visual QA</text>
+
+  <rect width="1440" height="820" rx="42" fill="url(#bg)"/>
+  <path d="M70 138 C254 58 379 84 530 137 C696 196 833 175 997 102 C1156 30 1278 48 1370 104" fill="none" stroke="#d1e5ff" stroke-width="3"/>
+  <path d="M92 665 C252 584 414 602 570 666 C729 731 852 735 1008 675 C1187 606 1292 616 1364 680" fill="none" stroke="#d8e8fb" stroke-width="3"/>
+
+  <text x="82" y="82" class="title">Image2Slides v1 workflow</text>
+  <text x="82" y="120" class="subtitle">two GPT-image-2 batches, source-locked figures, editable PowerPoint, pixel/patch QA, and review</text>
+
+  <g filter="url(#shadow)">
+    <g transform="translate(70 190)">
+      <rect width="250" height="136" rx="18" fill="#fff" stroke="#e6ebf2"/>
+      <circle cx="38" cy="42" r="17" fill="url(#blue)"/>
+      <text x="34" y="47" class="num">1</text>
+      <text x="68" y="42" class="card-title">Required input</text>
+      <text x="28" y="78" class="card-copy">tone, ratio, count</text>
+      <text x="28" y="101" class="card-copy">purpose, scene, knowledge</text>
+    </g>
+
+    <g transform="translate(390 190)">
+      <rect width="250" height="136" rx="18" fill="#fff" stroke="#e6ebf2"/>
+      <circle cx="38" cy="42" r="17" fill="url(#blue)"/>
+      <text x="34" y="47" class="num">2</text>
+      <text x="68" y="42" class="card-title">Wiki boundary</text>
+      <text x="28" y="78" class="card-copy">source registry</text>
+      <text x="28" y="101" class="card-copy">grep vs generate split</text>
+    </g>
+
+    <g transform="translate(710 190)">
+      <rect width="250" height="136" rx="18" fill="#fff" stroke="#e6ebf2"/>
+      <circle cx="38" cy="42" r="17" fill="url(#blue)"/>
+      <text x="34" y="47" class="num">3</text>
+      <text x="68" y="42" class="card-title">Completed refs</text>
+      <text x="28" y="78" class="card-copy">GPT-image-2 full slides</text>
+      <text x="28" y="101" class="card-copy">visible text target</text>
+    </g>
+
+    <g transform="translate(1030 190)">
+      <rect width="250" height="136" rx="18" fill="#fff" stroke="#e6ebf2"/>
+      <circle cx="38" cy="42" r="17" fill="url(#blue)"/>
+      <text x="34" y="47" class="num">4</text>
+      <text x="68" y="42" class="card-title">Background edits</text>
+      <text x="28" y="78" class="card-copy">remove only text</text>
+      <text x="28" y="101" class="card-copy">preserve geometry</text>
+    </g>
+
+    <g transform="translate(230 475)">
+      <rect width="250" height="136" rx="18" fill="#fff" stroke="#e6ebf2"/>
+      <circle cx="38" cy="42" r="17" fill="url(#blue)"/>
+      <text x="34" y="47" class="num">5</text>
+      <text x="68" y="42" class="card-title">Source-lock</text>
+      <text x="28" y="78" class="card-copy">exact figures in panels</text>
+      <text x="28" y="101" class="card-copy">no editable text inside</text>
+    </g>
+
+    <g transform="translate(550 475)">
+      <rect width="250" height="136" rx="18" fill="#fff" stroke="#e6ebf2"/>
+      <circle cx="38" cy="42" r="17" fill="url(#blue)"/>
+      <text x="34" y="47" class="num">6</text>
+      <text x="68" y="42" class="card-title">Editable PPTX</text>
+      <text x="28" y="78" class="card-copy">background as base</text>
+      <text x="28" y="101" class="card-copy">PowerPoint text overlay</text>
+    </g>
+
+    <g transform="translate(870 475)">
+      <rect width="250" height="136" rx="18" fill="#fff" stroke="#e6ebf2"/>
+      <circle cx="38" cy="42" r="17" fill="url(#blue)"/>
+      <text x="34" y="47" class="num">7</text>
+      <text x="68" y="42" class="card-title">QA + PDF</text>
+      <text x="28" y="78" class="card-copy">pixel/patch score</text>
+      <text x="28" y="101" class="card-copy">blank-zone overlays</text>
+    </g>
   </g>
-  <g filter="url(#shadow)" font-family="-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif">
-    <g transform="translate(72 184)">
-      <rect width="250" height="132" rx="18" fill="#fff" stroke="#e6ebf2"/>
-      <circle cx="38" cy="42" r="16" fill="#e9f3ff"/>
-      <path d="M31 42h14M38 35v14" stroke="#0a84ff" stroke-width="3" stroke-linecap="round"/>
-      <text x="68" y="42" fill="#111827" font-size="18" font-weight="700">Required input</text>
-      <text x="28" y="78" fill="#667085" font-size="14">tone, ratio, count, purpose</text>
-      <text x="28" y="101" fill="#667085" font-size="14">scene, knowledge base</text>
-    </g>
-    <g transform="translate(392 184)">
-      <rect width="250" height="132" rx="18" fill="#fff" stroke="#e6ebf2"/>
-      <circle cx="38" cy="42" r="16" fill="#e9f3ff"/>
-      <path d="M31 37h14M31 43h14M31 49h9" stroke="#0a84ff" stroke-width="3" stroke-linecap="round"/>
-      <text x="68" y="42" fill="#111827" font-size="18" font-weight="700">Wiki boundary</text>
-      <text x="28" y="78" fill="#667085" font-size="14">grep-required facts</text>
-      <text x="28" y="101" fill="#667085" font-size="14">generation-allowed scaffolds</text>
-    </g>
-    <g transform="translate(712 184)">
-      <rect width="250" height="132" rx="18" fill="#fff" stroke="#e6ebf2"/>
-      <circle cx="38" cy="42" r="16" fill="#e9f3ff"/>
-      <rect x="29" y="33" width="18" height="18" rx="4" fill="none" stroke="#0a84ff" stroke-width="3"/>
-      <text x="68" y="42" fill="#111827" font-size="18" font-weight="700">GPT-image-2 bases</text>
-      <text x="28" y="78" fill="#667085" font-size="14">text-free visual panels</text>
-      <text x="28" y="101" fill="#667085" font-size="14">source-aspect layout hints</text>
-    </g>
-    <g transform="translate(1032 184)">
-      <rect width="250" height="132" rx="18" fill="#fff" stroke="#e6ebf2"/>
-      <circle cx="38" cy="42" r="16" fill="#e9f3ff"/>
-      <path d="M29 49l9-16 9 16H29z" fill="none" stroke="#0a84ff" stroke-width="3" stroke-linejoin="round"/>
-      <text x="68" y="42" fill="#111827" font-size="18" font-weight="700">Source-lock</text>
-      <text x="28" y="78" fill="#667085" font-size="14">exact figures pasted in panel</text>
-      <text x="28" y="101" fill="#667085" font-size="14">completed/background pairs</text>
-    </g>
-    <g transform="translate(232 430)">
-      <rect width="250" height="132" rx="18" fill="#fff" stroke="#e6ebf2"/>
-      <circle cx="38" cy="42" r="16" fill="#e9f3ff"/>
-      <path d="M30 50c8-24 16-24 24 0" fill="none" stroke="#0a84ff" stroke-width="3" stroke-linecap="round"/>
-      <text x="68" y="42" fill="#111827" font-size="18" font-weight="700">Analyze blanks</text>
-      <text x="28" y="78" fill="#667085" font-size="14">text masks and color regions</text>
-      <text x="28" y="101" fill="#667085" font-size="14">editable text placement guide</text>
-    </g>
-    <g transform="translate(552 430)">
-      <rect width="250" height="132" rx="18" fill="#fff" stroke="#e6ebf2"/>
-      <circle cx="38" cy="42" r="16" fill="#e9f3ff"/>
-      <path d="M31 34h14l8 8v18H31z" fill="none" stroke="#0a84ff" stroke-width="3" stroke-linejoin="round"/>
-      <text x="68" y="42" fill="#111827" font-size="18" font-weight="700">Editable PPTX</text>
-      <text x="28" y="78" fill="#667085" font-size="14">background locked as base</text>
-      <text x="28" y="101" fill="#667085" font-size="14">text remains selectable</text>
-    </g>
-    <g transform="translate(872 430)">
-      <rect width="250" height="132" rx="18" fill="#fff" stroke="#e6ebf2"/>
-      <circle cx="38" cy="42" r="16" fill="#e9f3ff"/>
-      <path d="M29 43l7 7 14-17" fill="none" stroke="#0a84ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="68" y="42" fill="#111827" font-size="18" font-weight="700">QA + review</text>
-      <text x="28" y="78" fill="#667085" font-size="14">similarity and layout audit</text>
-      <text x="28" y="101" fill="#667085" font-size="14">human PDF snapshot</text>
-    </g>
-  </g>
+
   <g fill="none" stroke="url(#blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M322 250h48"/>
-    <path d="M642 250h48"/>
-    <path d="M962 250h48"/>
-    <path d="M1157 318c0 77-533 25-780 93"/>
-    <path d="M482 496h48"/>
-    <path d="M802 496h48"/>
+    <path d="M320 258h48"/>
+    <path d="M640 258h48"/>
+    <path d="M960 258h48"/>
+    <path d="M1155 328c0 88-610 36-795 126"/>
+    <path d="M480 543h48"/>
+    <path d="M800 543h48"/>
   </g>
   <g fill="#0a84ff">
-    <path d="M370 250l-12-8v16z"/>
-    <path d="M690 250l-12-8v16z"/>
-    <path d="M1010 250l-12-8v16z"/>
-    <path d="M377 411l-14-3 8 12z"/>
-    <path d="M530 496l-12-8v16z"/>
-    <path d="M850 496l-12-8v16z"/>
+    <path d="M368 258l-12-8v16z"/>
+    <path d="M688 258l-12-8v16z"/>
+    <path d="M1008 258l-12-8v16z"/>
+    <path d="M360 454l-14-3 8 12z"/>
+    <path d="M528 543l-12-8v16z"/>
+    <path d="M848 543l-12-8v16z"/>
   </g>
 </svg>
