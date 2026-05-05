@@ -31,6 +31,7 @@
     "skills/image2slides/agents/",
     "skills/image2slides/references/",
     "skills/image2slides/scripts/image2slides.py",
+    "pyproject.toml",
     "README.md",
     "README.zh-CN.md",
     "README.ja.md",
@@ -39,6 +40,7 @@
   ],
   "scripts": {
     "doctor": "python3 skills/image2slides/scripts/image2slides.py doctor",
+    "setup:python": "python3 -m pip install -e .",
     "test": "PYTHONPATH=skills/image2slides/scripts python3 tests/test_image2slides.py"
   },
   "engines": {

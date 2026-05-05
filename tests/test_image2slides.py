@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 from pathlib import Path
 import sys
@@ -75,6 +77,34 @@ def register_background(project: Path) -> None:
 
 
 class Image2SlidesTests(unittest.TestCase):
+    def test_declares_required_python_dependencies(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
+        package_json = json.loads((root / "package.json").read_text(encoding="utf-8"))
+
+        self.assertIn('"numpy>=1.24"', pyproject)
+        self.assertIn('"Pillow>=10.0"', pyproject)
+        self.assertIn("image2slides = \"image2slides:main\"", pyproject)
+        self.assertIn("pyproject.toml", package_json["files"])
+        self.assertIn("setup:python", package_json["scripts"])
+
+    def test_doctor_fails_when_required_numpy_missing(self) -> None:
+        original_np = image2slides.np
+        try:
+            image2slides.np = None
+            with contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(SystemExit) as raised:
+                    run_cli(["doctor"])
+            self.assertEqual(raised.exception.code, 1)
+
+            with contextlib.redirect_stdout(io.StringIO()) as stdout:
+                self.assertEqual(image2slides.main(["doctor", "--warn-only"]), 0)
+            checks = json.loads(stdout.getvalue())
+            self.assertFalse(checks["required_dependencies_ok"])
+            self.assertIn("numpy", checks["missing_required_dependencies"])
+        finally:
+            image2slides.np = original_np
+
     def test_init_requires_all_fields(self) -> None:
         with tempfile_dir() as tmp:
             spec = tmp / "bad.json"

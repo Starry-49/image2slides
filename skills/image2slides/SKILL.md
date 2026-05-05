@@ -22,6 +22,12 @@ If any required field is missing, ask only for the missing fields and stop befor
 
 ## Core Contract
 
+Dependency contract:
+- `numpy` and `Pillow` are required for analysis, source fitting, PPTX image sizing, and QA diagnostics.
+- Install the helper workflow from the repository `pyproject.toml` before running real deck work: `python3 -m pip install -e .`.
+- `image2slides doctor` must pass required dependencies before `analyze`, `compose-source-locked`, `build-pptx`, or `qa`.
+- LibreOffice/`pdftoppm` are optional render-QA tools; OpenAI SDK/API key support is only an optional fallback, not the default native imagegen path.
+
 1. Create a project directory and write the required intent to disk with:
    ```bash
    python skills/image2slides/scripts/image2slides.py init --project <deck-dir> --spec <spec.json>

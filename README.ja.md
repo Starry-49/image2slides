@@ -20,7 +20,7 @@ https://github.com/Starry-49/image2slides から Image2Slides をローカルに
 端から端まで実行してください:
 1. repository をローカル workspace に clone または update する。
 2. 変更前に README.md、.codex-plugin/plugin.json、skills/image2slides/SKILL.md、package.json、pyproject.toml、tests を確認する。
-3. repository の manifest に従って helper workflow に必要な local Node/Python dependencies を入れる。
+3. pyproject.toml から helper workflow を editable Python project としてインストールし、doctor/tests の前に numpy や Pillow などの必須依存が使える状態にする。
 4. repository root から Codex App plugin を import または refresh する。manifest は .codex-plugin/plugin.json を使う。Codex に skills/ subdirectory を指定しない。
 5. Image2Slides plugin が index され、/image2slides が使えることを確認する。
 6. plugin doctor と最小テストを実行する。

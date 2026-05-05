@@ -132,9 +132,9 @@ def die(message: str, code: int = 1) -> None:
 
 def require_image_libs() -> None:
     if Image is None or ImageDraw is None or ImageFont is None:
-        die("Pillow is required for image analysis. Install pillow or use the Codex bundled Python.")
+        die("Pillow is required for image analysis. Install with `python3 -m pip install -e .` or use the Codex bundled Python.")
     if np is None:
-        die("numpy is required for image analysis. Install numpy or use the Codex bundled Python.")
+        die("numpy is required for image analysis. Install with `python3 -m pip install -e .` or use the Codex bundled Python.")
 
 
 def read_json(path: Path) -> Dict[str, Any]:
@@ -3785,10 +3785,14 @@ def cmd_doctor(args: argparse.Namespace) -> None:
         "api_fallback_openai_api_key": bool(os.getenv("OPENAI_API_KEY")),
         "api_fallback_imagegen_cli": default_imagegen_cli().exists(),
     }
-    print(json.dumps(checks, indent=2, sort_keys=True))
     required = ("native_imagegen_default", "pillow", "numpy")
-    if args.strict and not all(checks[key] for key in required):
-        die("Doctor checks failed")
+    missing_required = [key for key in required if not checks[key]]
+    checks["required_dependencies_ok"] = not missing_required
+    checks["missing_required_dependencies"] = missing_required
+    checks["install_python_dependencies"] = "python3 -m pip install -e ."
+    print(json.dumps(checks, indent=2, sort_keys=True))
+    if missing_required and not args.warn_only:
+        die("Doctor checks failed: missing required dependencies: " + ", ".join(missing_required))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -3902,6 +3906,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("doctor", help="Check local tool availability")
     p.add_argument("--strict", action="store_true")
+    p.add_argument("--warn-only", action="store_true", help="Report missing required dependencies without failing")
     p.set_defaults(func=cmd_doctor)
     return parser
 

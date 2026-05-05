@@ -20,7 +20,7 @@ Install Image2Slides locally from https://github.com/Starry-49/image2slides and 
 Do this end to end:
 1. Clone or update the repository into a local workspace.
 2. Inspect README.md, .codex-plugin/plugin.json, skills/image2slides/SKILL.md, package.json, pyproject.toml, and tests before changing anything.
-3. Install the local Node/Python dependencies needed by the helper workflow using the repository's own manifests.
+3. Install the helper workflow as an editable Python project from pyproject.toml so required dependencies such as numpy and Pillow are available before doctor/tests.
 4. Import or refresh the Codex App plugin from the repository root, using .codex-plugin/plugin.json as the manifest. Do not point Codex at the skills/ subdirectory.
 5. Verify that the Image2Slides plugin is indexed and that /image2slides is available.
 6. Run the plugin doctor and the minimal test suite.

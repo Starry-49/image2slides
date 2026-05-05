@@ -20,7 +20,7 @@ Plugin 入口是 `/image2slides`，核心说明在 [skills/image2slides/SKILL.md
 请端到端完成：
 1. 把仓库 clone 或更新到本地 workspace。
 2. 先阅读 README.md、.codex-plugin/plugin.json、skills/image2slides/SKILL.md、package.json、pyproject.toml 和 tests，再做任何改动。
-3. 根据仓库自己的 manifest 安装 helper workflow 所需的本地 Node/Python 依赖。
+3. 按 pyproject.toml 把 helper workflow 作为 editable Python project 安装，确保 numpy、Pillow 等必需依赖在 doctor/tests 前可用。
 4. 从仓库根目录导入或刷新 Codex App plugin，manifest 使用 .codex-plugin/plugin.json。不要把 Codex 指到 skills/ 子目录。
 5. 确认 Image2Slides plugin 已经被索引，并且 /image2slides 可用。
 6. 运行 plugin doctor 和最小测试。
