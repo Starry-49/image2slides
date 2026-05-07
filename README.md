@@ -6,13 +6,15 @@
 
 **Languages:** English | [中文](./README.zh-CN.md) | [日本語](./README.ja.md)
 
-Image2Slides is a Codex plugin and CLI workflow for turning GPT-image slide visuals into editable PowerPoint decks. It uses Codex native `image_gen` for GPT-image-2 visual bases, keeps source-locked data figures exact, places editable PowerPoint text above matched backgrounds, and verifies the final deck against reference images.
+Image2Slides is a Codex plugin for turning GPT-image slide compositions into editable PowerPoint decks. The invariant is simple: GPT-image-2 creates the visual target and matching text-free backgrounds; PowerPoint keeps the final text editable.
 
-The plugin entrypoint is `/image2slides`, implemented by [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md). The deterministic helper CLI is [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py).
+Plugin entrypoint: `/image2slides`
+Workflow contract: [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md)
+Helper CLI: [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py)
 
 ## Copy This Prompt
 
-You only need to copy the prompt below into your local Codex or coding agent. The agent should handle dependency setup, workflow bootstrap, and Codex App plugin import for you.
+Give this prompt to a local Codex or coding agent. The agent should install dependencies, import the plugin, and wire the conditional hook.
 
 ```text
 Install Image2Slides locally from https://github.com/Starry-49/image2slides and make it available in Codex App as the /image2slides plugin.
@@ -20,165 +22,88 @@ Install Image2Slides locally from https://github.com/Starry-49/image2slides and 
 Do this end to end:
 1. Clone or update the repository into a local workspace.
 2. Inspect README.md, .codex-plugin/plugin.json, skills/image2slides/SKILL.md, package.json, pyproject.toml, and tests before changing anything.
-3. Install the helper workflow as an editable Python project from pyproject.toml so required dependencies such as numpy and Pillow are available before doctor/tests.
+3. Install the helper workflow as an editable Python project from pyproject.toml so numpy and Pillow are available before doctor/tests.
 4. Import or refresh the Codex App plugin from the repository root, using .codex-plugin/plugin.json as the manifest. Do not point Codex at the skills/ subdirectory.
-5. Verify that the Image2Slides plugin is indexed and that /image2slides is available.
-6. Run the plugin doctor and the minimal test suite.
-7. Create a small local deck workspace and confirm the workflow folders can be initialized: wiki, prompts, completed, background, analysis, pptx, and reports.
-8. Confirm GPT-image-2 generation uses Codex native image_gen by default and should not ask me for OPENAI_API_KEY unless I explicitly request SDK/API fallback.
-9. Report the exact plugin path, dependency/runtime choices, verification evidence, and any Codex App refresh step I still need to perform.
+5. Register hooks/image2slides-native-hook.mjs as a conditional Codex hook for UserPromptSubmit, Bash PreToolUse, and Stop. It must stay silent for unrelated work and only activate after /image2slides prompts or image2slides CLI commands.
+6. Verify /image2slides is indexed, run doctor/tests, and create a tiny deck workspace with wiki, prompts, completed, background, analysis, pptx, and reports.
+7. Confirm GPT-image-2 uses Codex native image_gen by default, and register completed/background images only with native receipt manifests copied from $CODEX_HOME/generated_images/.../ig_*.png. Do not ask me for OPENAI_API_KEY unless I explicitly request SDK/API fallback.
+8. Report the plugin path, hook path, runtime choices, verification evidence, and any Codex App refresh step I still need to perform.
 
-Keep all generated decks and private knowledge-base material local. Do not publish example artifacts unless I explicitly ask.
+Keep generated decks and private knowledge-base material local. Do not publish example artifacts unless I explicitly ask.
 ```
 
-## Required User Inputs
+## Core Rules
 
-`/image2slides` requires all of these fields before generation starts:
+- Codex Desktop usage should start with a visible guide, not silent execution. Run `image2slides guide` when a user needs to understand the workflow, inputs, and outputs.
+- Required inputs: style/tone, aspect ratio, page count, purpose, scene, and user-provided knowledge materials.
+- The required input fields are control metadata; they must not appear as visible slide text.
+- If any required input is missing, the agent must ask only for the missing fields before creating files. `image2slides intake` prints the checklist.
+- Facts, citations, current data, and source-locked results go under `wiki/grep/`; generated narrative and visual ideas go under `wiki/generate/`.
+- `completed/` must contain GPT-image-2 full-slide references with visible text. Never fill it from PPTX/PDF renders, screenshots, local templates, or deterministic drawing.
+- `background/` must contain GPT-image-2 edits of the matching completed slides, with text removed and geometry preserved.
+- Native registration must include a receipt manifest proving each registered PNG was copied from Codex native `image_gen` output under `$CODEX_HOME/generated_images/.../ig_*.png`.
+- Final PPTX text is editable PowerPoint text layered above the matching background image.
 
-- slide base style and color tone
-- slide aspect ratio
-- slide page count
-- slide purpose: speech or showcase
-- presentation scene: academic, enterprise, classroom, life, or another explicit scene
-- knowledge base: user-provided text, images, references, or material paths
+## Conditional Hook
 
-Use [examples/spec.example.json](./examples/spec.example.json) as the starting shape.
+[hooks/image2slides-native-hook.mjs](./hooks/image2slides-native-hook.mjs) is a workflow guard, not a global PPT rule.
 
-## Workflow To Results
+- `UserPromptSubmit` adds the two-pass GPT-image-2 contract only for `/image2slides` or explicit Image2Slides requests.
+- Bash `PreToolUse` inspects `image2slides ...` CLI commands and blocks PPTX/python-pptx bypasses while an Image2Slides project is active.
+- `Stop` blocks premature completion when the active project still lacks native completed/background provenance.
+- Native `register-completed` and `register-background` commands are blocked unless they include `--native-manifest`.
+- `compose-source-locked`, `analyze`, `build-pptx`, `qa`, `audit-layout`, and `audit-boundaries` are blocked until completed/background provenance manifests exist.
+- Background generation and registration require completed provenance first.
 
-1. Create the project wiki and output structure:
+## Workflow
+
+1. Initialize the deck project.
 
    ```bash
+   image2slides guide
+   image2slides intake
    image2slides init --project decks/my-deck --spec examples/spec.example.json
    ```
 
-   This writes `project.json`, `wiki/00_project_brief.md`, `wiki/01_wiki_map.md`, `wiki/02_content_boundary.md`, `wiki/03_source_registry.yml`, and `wiki/04_slide_plan.json`.
+2. Fill the wiki boundary.
 
-2. Fill the knowledge boundary:
+   Update `wiki/02_content_boundary.md`, `wiki/03_source_registry.yml`, and `wiki/04_slide_plan.json`.
 
-   - Put sourced facts, citations, extracted text, and web/search findings in `wiki/grep/`.
-   - Put generated narrative, metaphors, teaching examples, and draft phrasing in `wiki/generate/`.
-   - Update `wiki/02_content_boundary.md` so every slide says what must be grep/search grounded and what can be generated.
-
-3. Write image prompts:
+3. Queue prompts and normalize source panels.
 
    ```bash
    image2slides queue --project decks/my-deck
-   ```
-
-   Results:
-   - `prompts/completed_prompts.jsonl`
-   - `prompts/background_edit_prompts.jsonl`
-
-   `queue` first normalizes source-layer panels so each panel bbox follows the trimmed source figure aspect ratio plus the configured inset margin. You can check or apply that step explicitly with:
-
-   ```bash
    image2slides normalize-source-panels --project decks/my-deck --check --strict
-   image2slides normalize-source-panels --project decks/my-deck
    ```
 
-4. Generate GPT-image-2 completed slide references with Codex native `image_gen`.
+   `queue` also writes `reports/native_imagegen_run.md` plus native receipt manifest templates.
 
-   The default plugin workflow uses Codex native image generation, so it does not require `OPENAI_API_KEY`. Each `completed/slide_XX_completed.png` must be a GPT-image-2 full-slide reference with the intended visible text. Never fill `completed/` from PPTX/PDF renders, local screenshots, or deterministic drawing output. After copying native image_gen outputs into `completed/`, register them:
+4. Generate the two GPT-image-2 image batches.
+
+   Use Codex native `image_gen` for completed slides, then edit those completed slides into text-free backgrounds.
 
    ```bash
-   image2slides register-completed --project decks/my-deck
+   image2slides register-completed --project decks/my-deck --native-manifest decks/my-deck/reports/native_imagegen_completed_manifest.json
+   image2slides register-background --project decks/my-deck --native-manifest decks/my-deck/reports/native_imagegen_background_manifest.json
    ```
 
-5. Generate text-free backgrounds by editing each completed slide.
-
-   The background pass uses GPT-image-2 edit and removes only text, keeping layout, graphics, color, and geometry aligned with `completed/`. After native image_gen edit outputs are copied into `background/`, register them so downstream steps can prove they are text-free edits of the current completed batch:
-
-   ```bash
-   image2slides imagegen --project decks/my-deck --phase background --dry-run
-   image2slides imagegen --project decks/my-deck --phase background --execute
-   image2slides register-background --project decks/my-deck
-   ```
-
-   For source-locked data/results, keep original figures in `wiki/sources/` and patch exact trimmed source figures into the existing image_gen completed/background pair:
+5. Patch source-locked figures and build the PPTX.
 
    ```bash
    image2slides compose-source-locked --project decks/my-deck
-   image2slides audit-layout --project decks/my-deck --strict
-   ```
-
-   Results land in `background/slide_XX_background.png` plus `background/.image2slides_background_provenance.json`. The background prompt requires the only difference from `completed/` to be removed text; layout, graphics, color, and geometry must remain aligned. `analyze`, `build-pptx`, `compose-source-locked`, and `qa` reject unregistered local templates, screenshots, deterministic drawings, stale backgrounds, or background batches not tied to the current completed provenance.
-   The layout audit verifies that source figures stay inside detected/native panels, panel inset ratios match trimmed source figure ratios, source panels/images do not overlap each other or editable text, figure-first slides keep figures visually dominant over supporting text, and duplicate rounded frames are not added over native imagegen panels.
-   Source fitting trims blank pixels, asks GPT-image-2 to reserve panels whose proportions match source images, detects the actual panel edge on generated bases or backgrounds, insets that panel by `fit_margin_px`, maximizes scale under the four parallel-edge constraints, then center-aligns the image inside that inset panel. Generated/native panels enforce at least 32 px of inset margin even if a layer asks for less, and edge-connected near-white source blank is pasted transparently so a chart cannot cover the generated panel with its own white rectangle. The planned `bbox` is only a detector search hint; if it points at a wrong insertion position, Image2Slides must still use the true generated panel or fail strict QA. If the true generated panel ratio does not match the trimmed source ratio, regenerate the GPT-image-2 panel instead of stretching or cropping the source.
-   `queue` also writes each source panel into `wiki/04_slide_plan.json` as a `non_editable_image_panel` layout boundary. Editable PowerPoint text should never be placed inside these regions. Text already printed inside source charts, diagrams, schematics, or icons is treated as image content and is preserved unless the user explicitly asks to extract it.
-
-   Figure-first standard:
-   - keep exact source panels for result/data figures whose plotted values must remain unchanged
-   - do not reserve panels for decorative diagrams, icons, or text-heavy screenshots when their text can be extracted
-   - use less text; text should explain how to read the figure, not compete with it
-   - split crowded multi-figure messages into more slides instead of shrinking every figure
-
-   Optional API/SDK fallback for completed generation is available only when explicitly requested:
-
-   ```bash
-   image2slides imagegen --project decks/my-deck --phase completed --dry-run
-   image2slides imagegen --project decks/my-deck --phase completed --execute
-   ```
-
-6. Analyze text and blank regions:
-
-   ```bash
    image2slides analyze --project decks/my-deck
-   ```
-
-   Results:
-   - `analysis/slide_XX.json`
-   - `analysis/manifest.json`
-
-   The analyzer compares `completed/` and `background/`, treats their pixel difference as the text mask, identifies dominant background colors, estimates text regions, and finds low-variation blank regions for editable text filling.
-   Before trusting that mask as a correction target, review whether the completed/background pair differs only by text. If non-text geometry, panels, figures, or illustrations moved, regenerate the GPT-image-2 background edit rather than tuning PPT text around a contaminated mask.
-
-7. Build the editable PowerPoint deck:
-
-   ```bash
    image2slides build-pptx --project decks/my-deck
    ```
 
-   Result:
-   - `pptx/image2slides.pptx`
-
-   Every slide uses the matching background image as the non-editable visual base. Text from `wiki/04_slide_plan.json` is added as editable PowerPoint text boxes above the background.
-
-8. Render and verify:
+6. Verify, then do a short human detail check.
 
    ```bash
    image2slides qa --project decks/my-deck --strict
    ```
 
-   Results:
-   - `reports/rendered/`
-   - `reports/qa_similarity.json`
-   - `reports/qa_report.md`
-   - `reports/source_layer_audit.md`
-   - `reports/text_alignment_audit.md`
-   - `reports/source_render_audit.md`
-   - `reports/background_audit.md`
-   - `reports/content_boundary_audit.md`
-   - `reports/content_boundary_overlays/`
+   QA renders the PPTX when local tools are available, compares it with `completed/`, audits source-panel layout, checks background uniqueness, and writes boundary overlays. The final human pass only checks polish: panel padding, line breaks, text scale, overflow, consistency, and unchanged source data/results.
 
-   QA re-renders the PPTX locally when LibreOffice and `pdftoppm` are available, compares rendered slides with `completed/` using pixel and patch similarity, repeats the fixed source-layer layout audit, checks each rendered source crop against the final source-locked background crop, verifies source transparent blank still matches the source-free native panel, checks local editable-text alignment against `completed/`, and fails strict mode on byte-identical or visually near-identical background pages. The default strict similarity preset requires overall pixel similarity >= 0.90 while allowing expected font rasterization differences between GPT-image-2 reference text and editable PowerPoint text. Stale rendered screenshots are cleared before each render.
-   The content-boundary audit is the stronger diagnostic for layout confidence: it detects the main blank color, defines `blank_zone`, `forbidden_zone`, and `text_fill_zone`, treats source panels as no-text regions, excludes asset-internal labels inside images, and writes visual overlays for Codex/LLM review. Use `image2slides audit-boundaries --project decks/my-deck --rendered-dir reports/rendered` when you want to run that diagnostic independently. Add `--boundary-strict` to `qa` only when these warnings should fail the command.
-
-If a stage deviates from this order, delete every downstream artifact from the first invalid stage and restart from the last valid checkpoint. For example, invalid `completed/` means rerun completed, background, analysis, PPTX, and QA; invalid `background/` means rerun background, analysis, PPTX, and QA.
-
-9. Do a brief human detail check.
-
-   Open `pptx/image2slides.pptx` and scan for the small details that automated QA should not overfit: figure-panel visual padding, line breaks, font scale, obvious text overflow, page-to-page consistency, and whether source data/results remain unchanged. Keep this as a short final review pass after strict QA, not as a replacement for QA.
-
-## Howitworks Example
-
-The repository includes [howitworks/](./howitworks/) as a minimal mental model of the full workflow. It contains the knowledge-base document, extracted text and figures, structured wiki, GPT-image-2 native bases, source-locked completed/background images, final PPTX, rendered slides, QA reports, and a short example README.
-
-![Howitworks reviewed PDF preview](./howitworks/image2slides_run/pptx/image2slides_preview.png)
-
-The main editable result is [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx). The human-reviewed visual export is [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf); prefer that PDF for final visual inspection because it comes directly from the reviewed PowerPoint deck and avoids later conversion drift. The lightweight plugin bundle does not include this large example artifact set; clone the GitHub repo when you want to inspect or rerun the example.
-
-## Output Directory Map
+## Output Map
 
 ```text
 decks/my-deck/
@@ -196,6 +121,13 @@ decks/my-deck/
 └── reports/
 ```
 
-## Design Boundary
+## Example
 
-Image2Slides intentionally does not make the final deck image-only. Full-slide images are visual references and QA targets. The final result keeps important text editable in PowerPoint, using text-free image backgrounds as stable base layers.
+The repository includes [howitworks/](./howitworks/) as a minimal mental model of the full workflow.
+
+![Howitworks reviewed PDF preview](./howitworks/image2slides_run/pptx/image2slides_preview.png)
+
+Primary editable output: [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx)
+Reviewed visual snapshot: [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf)
+
+The lightweight plugin bundle does not include the large example artifact set. Clone the GitHub repo when you want to inspect or rerun the example.

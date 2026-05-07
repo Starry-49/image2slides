@@ -3,7 +3,10 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import zipfile
 import unittest
@@ -34,6 +37,23 @@ def run_cli(args: list[str]) -> None:
     assert image2slides.main(args) == 0
 
 
+def run_native_hook(payload: dict, cwd: Path | None = None, state_path: Path | None = None) -> str:
+    root = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    if state_path is not None:
+        env["IMAGE2SLIDES_HOOK_STATE"] = str(state_path)
+    result = subprocess.run(
+        ["node", str(root / "hooks/image2slides-native-hook.mjs")],
+        input=json.dumps(payload),
+        text=True,
+        capture_output=True,
+        cwd=str(cwd or root),
+        env=env,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
 def make_pair(project: Path, slide: int, text: str = "TITLE") -> None:
     size = (640, 360)
     background = Image.new("RGB", size, "#dceaf7")
@@ -46,6 +66,39 @@ def make_pair(project: Path, slide: int, text: str = "TITLE") -> None:
     draw_completed.text((52, 130), "one\ntwo\nthree", fill="#152033")
     background.save(project / "background" / f"slide_{slide:02d}_background.png")
     completed.save(project / "completed" / f"slide_{slide:02d}_completed.png")
+
+
+def create_native_manifest(project: Path, tmp: Path, kind: str, slide_count: int = 1) -> Path:
+    generated = tmp / ".codex/generated_images/session"
+    generated.mkdir(parents=True, exist_ok=True)
+    dest_dir = project / kind
+    copied = []
+    for slide in range(1, slide_count + 1):
+        source = generated / f"ig_{kind}_{slide:02d}.png"
+        image = Image.new("RGB", (640, 360), "#ffffff")
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((40, 40, 600, 320), fill="#eaf4ff")
+        if kind == "completed":
+            draw.text((80, 90), f"Slide {slide}", fill="#102033")
+        else:
+            draw.ellipse((260, 120, 380, 240), fill="#2f80ed")
+        image.save(source)
+        dest_name = f"slide_{slide:02d}_{'completed' if kind == 'completed' else 'background'}.png"
+        dest = dest_dir / dest_name
+        shutil.copyfile(source, dest)
+        copied.append({"slide": slide, "source": str(source), "dest": str(dest)})
+    manifest = project / "reports" / f"native_imagegen_{kind}_manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "native_imagegen": "Codex native image_gen GPT-image-2 path",
+                "phase": kind,
+                "copied": copied,
+            }
+        ),
+        encoding="utf-8",
+    )
+    return manifest
 
 
 def register_completed(project: Path) -> None:
@@ -86,6 +139,8 @@ class Image2SlidesTests(unittest.TestCase):
         self.assertIn('"Pillow>=10.0"', pyproject)
         self.assertIn("image2slides = \"image2slides:main\"", pyproject)
         self.assertIn("pyproject.toml", package_json["files"])
+        self.assertIn("hooks/", package_json["files"])
+        self.assertIn("guide", package_json["scripts"])
         self.assertIn("setup:python", package_json["scripts"])
 
     def test_doctor_fails_when_required_numpy_missing(self) -> None:
@@ -104,6 +159,213 @@ class Image2SlidesTests(unittest.TestCase):
             self.assertIn("numpy", checks["missing_required_dependencies"])
         finally:
             image2slides.np = original_np
+
+    def test_native_hook_is_conditional_and_blocks_missing_imagegen_provenance(self) -> None:
+        unrelated_prompt = run_native_hook({"hook_event_name": "UserPromptSubmit", "prompt": "make a PowerPoint deck"})
+        self.assertEqual(unrelated_prompt, "")
+
+        image2slides_prompt = run_native_hook({"hook_event_name": "UserPromptSubmit", "prompt": "/image2slides make a deck"})
+        context = json.loads(image2slides_prompt)["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("GPT-image-2", context)
+        self.assertIn("style/tone", context)
+        self.assertIn("knowledge-base", context)
+
+        natural_prompt = run_native_hook(
+            {
+                "hook_event_name": "UserPromptSubmit",
+                "prompt": "Turn my PDF and notes into an editable PPTX deck",
+            }
+        )
+        natural_context = json.loads(natural_prompt)["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("Desktop response contract", natural_context)
+
+        unrelated_tool = run_native_hook(
+            {
+                "hook_event_name": "PreToolUse",
+                "tool_name": "Bash",
+                "tool_input": {"command": "python make_pptx.py --input notes.md"},
+            }
+        )
+        self.assertEqual(unrelated_tool, "")
+
+        with tempfile_dir() as tmp:
+            state = tmp / "hook-state.json"
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            run_native_hook(
+                {"hook_event_name": "UserPromptSubmit", "prompt": "/image2slides make a deck", "cwd": str(tmp)},
+                cwd=tmp,
+                state_path=state,
+            )
+            queued = run_native_hook(
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "Bash",
+                    "cwd": str(tmp),
+                    "tool_input": {"command": f"image2slides queue --project {project}"},
+                },
+                cwd=tmp,
+                state_path=state,
+            )
+            self.assertEqual(queued, "")
+
+            view_pptx = run_native_hook(
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "Bash",
+                    "cwd": str(tmp),
+                    "tool_input": {"command": "ls deck.pptx"},
+                },
+                cwd=tmp,
+                state_path=state,
+            )
+            self.assertEqual(view_pptx, "")
+
+            bypass = run_native_hook(
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "Bash",
+                    "cwd": str(tmp),
+                    "tool_input": {"command": "python - <<'PY'\nfrom pptx import Presentation\nPresentation().save('deck.pptx')\nPY"},
+                },
+                cwd=tmp,
+                state_path=state,
+            )
+            self.assertEqual(json.loads(bypass)["decision"], "block")
+            self.assertIn("Do not bypass", json.loads(bypass)["reason"])
+
+            stopped = run_native_hook(
+                {"hook_event_name": "Stop", "cwd": str(tmp)},
+                cwd=tmp,
+                state_path=state,
+            )
+            self.assertEqual(json.loads(stopped)["decision"], "block")
+            self.assertIn("cannot finish Image2Slides", json.loads(stopped)["reason"])
+
+            blocked = run_native_hook(
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "Bash",
+                    "cwd": str(tmp),
+                    "tool_input": {"command": f"image2slides analyze --project {project}"},
+                },
+                cwd=tmp,
+                state_path=state,
+            )
+            self.assertEqual(json.loads(blocked)["decision"], "block")
+            self.assertIn("completed provenance", json.loads(blocked)["reason"])
+
+            blocked_register = run_native_hook(
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "Bash",
+                    "cwd": str(tmp),
+                    "tool_input": {"command": f"image2slides register-completed --project {project}"},
+                },
+                cwd=tmp,
+                state_path=state,
+            )
+            self.assertEqual(json.loads(blocked_register)["decision"], "block")
+            self.assertIn("--native-manifest", json.loads(blocked_register)["reason"])
+
+            make_pair(project, 1)
+            register_completed(project)
+            register_background(project)
+            allowed = run_native_hook(
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "Bash",
+                    "cwd": str(tmp),
+                    "tool_input": {"command": f"image2slides analyze --project {project}"},
+                },
+                cwd=tmp,
+                state_path=state,
+            )
+            self.assertEqual(allowed, "")
+            stopped_after_provenance = run_native_hook(
+                {"hook_event_name": "Stop", "cwd": str(tmp)},
+                cwd=tmp,
+                state_path=state,
+            )
+            self.assertEqual(stopped_after_provenance, "")
+            bypass_after_done = run_native_hook(
+                {
+                    "hook_event_name": "PreToolUse",
+                    "tool_name": "Bash",
+                    "cwd": str(tmp),
+                    "tool_input": {"command": "python - <<'PY'\nfrom pptx import Presentation\nPresentation().save('other.pptx')\nPY"},
+                },
+                cwd=tmp,
+                state_path=state,
+            )
+            self.assertEqual(bypass_after_done, "")
+
+    def test_intake_prints_required_user_fields(self) -> None:
+        with contextlib.redirect_stdout(io.StringIO()) as stdout:
+            run_cli(["intake"])
+        markdown = stdout.getvalue()
+        self.assertIn("style_tone", markdown)
+        self.assertIn("knowledge_base", markdown)
+        self.assertIn("ask only for the missing fields", markdown)
+
+        with contextlib.redirect_stdout(io.StringIO()) as stdout:
+            run_cli(["intake", "--format", "json"])
+        payload = json.loads(stdout.getvalue())
+        keys = {item["key"] for item in payload["required"]}
+        self.assertEqual(keys, set(image2slides.REQUIRED_FIELDS))
+
+    def test_guide_prints_desktop_workflow_inputs_and_outputs(self) -> None:
+        with contextlib.redirect_stdout(io.StringIO()) as stdout:
+            run_cli(["guide"])
+        markdown = stdout.getvalue()
+        self.assertIn("Image2Slides Guide", markdown)
+        self.assertIn("Workflow", markdown)
+        self.assertIn("completed/", markdown)
+        self.assertIn("pptx/image2slides.pptx", markdown)
+
+        with contextlib.redirect_stdout(io.StringIO()) as stdout:
+            run_cli(["guide", "--format", "json"])
+        payload = json.loads(stdout.getvalue())
+        self.assertIn("workflow", payload)
+        self.assertIn("desktop_message_rule", payload)
+        self.assertEqual({item["key"] for item in payload["required"]}, set(image2slides.REQUIRED_FIELDS))
+
+    def test_native_registration_requires_receipt_manifest(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=1)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+            make_pair(project, 1)
+
+            with self.assertRaises(SystemExit):
+                run_cli(["register-completed", "--project", str(project)])
+
+    def test_native_registration_receipt_manifest_records_verified_copies(self) -> None:
+        with tempfile_dir() as tmp:
+            spec = tmp / "spec.json"
+            project = tmp / "deck"
+            write_spec(spec, slide_count=2)
+            run_cli(["init", "--project", str(project), "--spec", str(spec)])
+
+            completed_manifest = create_native_manifest(project, tmp, "completed", slide_count=2)
+            run_cli(["register-completed", "--project", str(project), "--native-manifest", str(completed_manifest)])
+            completed_provenance = json.loads((project / "completed/.image2slides_completed_provenance.json").read_text())
+            receipt = completed_provenance["native_imagegen_manifest"]
+            self.assertEqual(receipt["phase"], "completed")
+            self.assertEqual(len(receipt["verified_copies"]), 2)
+            self.assertTrue(receipt["verified_copies"][0]["native_source"].endswith("ig_completed_01.png"))
+
+            background_manifest = create_native_manifest(project, tmp, "background", slide_count=2)
+            run_cli(["register-background", "--project", str(project), "--native-manifest", str(background_manifest)])
+            background_provenance = json.loads((project / "background/.image2slides_background_provenance.json").read_text())
+            self.assertEqual(background_provenance["native_imagegen_manifest"]["phase"], "background")
+
+            image2slides.validate_completed_provenance(project, image2slides.load_project(project))
+            image2slides.validate_background_provenance(project, image2slides.load_project(project))
 
     def test_init_requires_all_fields(self) -> None:
         with tempfile_dir() as tmp:
@@ -128,6 +390,9 @@ class Image2SlidesTests(unittest.TestCase):
             self.assertEqual(len(completed_jobs), 2)
             self.assertEqual(len(background_jobs), 2)
             self.assertEqual(json.loads(completed_jobs[0])["model"], "gpt-image-2")
+            self.assertTrue((project / "reports/native_imagegen_run.md").exists())
+            self.assertTrue((project / "reports/native_imagegen_completed_manifest.template.json").exists())
+            self.assertTrue((project / "reports/native_imagegen_background_manifest.template.json").exists())
 
     def test_analyze_and_build_pptx(self) -> None:
         with tempfile_dir() as tmp:

@@ -46,6 +46,48 @@ REQUIRED_FIELDS = (
     "knowledge_base",
 )
 
+INTAKE_FIELDS = (
+    (
+        "style_tone",
+        "Slide base style and color tone",
+        "Example: white academic, cool medical blue, minimal enterprise gray",
+    ),
+    (
+        "aspect_ratio",
+        "Slide aspect ratio",
+        "Example: 16:9, 4:3, 1:1",
+    ),
+    (
+        "slide_count",
+        "Slide page count",
+        "Example: 5, 15, around 20",
+    ),
+    (
+        "purpose",
+        "Deck purpose",
+        "Use speech for a talk/defense/class report, or showcase for display/read-only decks",
+    ),
+    (
+        "scene",
+        "Presentation scene",
+        "Example: academic, enterprise, classroom, life",
+    ),
+    (
+        "knowledge_base",
+        "Knowledge-base materials",
+        "Provide file paths, pasted notes, PDFs, images, or source folders",
+    ),
+)
+WORKFLOW_STEPS = (
+    ("intake", "Collect required user inputs and exact-source constraints before creating files."),
+    ("wiki", "Create the deck project, source registry, content boundary, and slide plan."),
+    ("completed", "Use Codex native image_gen to create GPT-image-2 full-slide reference images with text."),
+    ("background", "Use Codex native image_gen edit to remove only text from each completed slide."),
+    ("source_lock", "Patch exact user figures into detected imagegen panels when results must not change."),
+    ("pptx", "Build editable PowerPoint text over non-selectable background images."),
+    ("qa", "Render and compare against completed references, then write audit reports."),
+)
+
 PROJECT_DIRS = (
     "wiki",
     "wiki/grep",
@@ -107,6 +149,10 @@ BACKGROUND_ALLOWED_METHODS = {
     "test_image_gen_edit_fixture",
     "test_image_gen_edit_fixture_with_source_locked_patch",
 }
+NATIVE_IMAGEGEN_SOURCE_MARKERS = (
+    "/.codex/generated_images/",
+    "/generated_images/",
+)
 COMPLETED_FORBIDDEN_SOURCE_MARKERS = (
     "pptx",
     "powerpoint export",
@@ -154,6 +200,123 @@ def write_json(path: Path, value: Any) -> None:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def intake_json() -> Dict[str, Any]:
+    return {
+        "required": [
+            {"key": key, "label": label, "hint": hint}
+            for key, label, hint in INTAKE_FIELDS
+        ],
+        "recommended": [
+            {
+                "key": "source_locked_items",
+                "label": "Data/results/figures that must remain exact",
+                "hint": "List charts, tables, figures, values, axes, or claims that must not be regenerated or altered.",
+            },
+            {
+                "key": "language",
+                "label": "Deck language",
+                "hint": "Example: Chinese, English, Japanese, bilingual.",
+            },
+            {
+                "key": "citation_policy",
+                "label": "Citation/source expectations",
+                "hint": "Tell the agent whether citations are needed on slides, in notes, or only in the wiki.",
+            },
+        ],
+        "agent_rule": "If any required field is missing, ask only for the missing fields and stop before image2slides init.",
+    }
+
+
+def intake_markdown() -> str:
+    lines = [
+        "# Image2Slides Intake",
+        "",
+        "Before creating project files or calling image generation, collect these required fields.",
+        "",
+        "## Required",
+        "",
+    ]
+    for key, label, hint in INTAKE_FIELDS:
+        lines.append(f"- `{key}`: {label}. {hint}.")
+    lines.extend(
+        [
+            "",
+            "## Recommended",
+            "",
+            "- `source_locked_items`: data, results, charts, tables, figures, values, axes, or claims that must remain exact.",
+            "- `language`: output language for the deck.",
+            "- `citation_policy`: whether citations should appear on slides, in notes, or only in the wiki.",
+            "",
+            "## Agent Rule",
+            "",
+            "If any required field is missing, ask only for the missing fields and stop before `image2slides init`.",
+            "",
+            "## User Prompt",
+            "",
+            "To start Image2Slides, please provide:",
+            "1. base style/color tone",
+            "2. aspect ratio",
+            "3. slide count",
+            "4. purpose: speech or showcase",
+            "5. presentation scene",
+            "6. knowledge-base files, source folders, PDFs, images, or pasted materials",
+            "",
+            "Also note any data/results/figures that must remain exact.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def guide_json() -> Dict[str, Any]:
+    payload = intake_json()
+    payload["workflow"] = [{"stage": key, "summary": summary} for key, summary in WORKFLOW_STEPS]
+    payload["outputs"] = [
+        "wiki/ structured project notes and source boundaries",
+        "completed/ GPT-image-2 full-slide references",
+        "background/ GPT-image-2 text-free backgrounds",
+        "pptx/image2slides.pptx editable PowerPoint deck",
+        "reports/ QA, pixel similarity, layout, source, and boundary audits",
+    ]
+    payload["desktop_message_rule"] = (
+        "In Codex Desktop, start by explaining the workflow briefly, then ask for missing required inputs. "
+        "Do not create files or call image_gen until required inputs are present."
+    )
+    return payload
+
+
+def guide_markdown() -> str:
+    lines = [
+        "# Image2Slides Guide",
+        "",
+        "Image2Slides turns user materials into an editable PowerPoint deck through a visible, checkpointed workflow.",
+        "",
+        "## Workflow",
+        "",
+    ]
+    for index, (key, summary) in enumerate(WORKFLOW_STEPS, start=1):
+        lines.append(f"{index}. `{key}`: {summary}")
+    lines.extend(["", "## Inputs", ""])
+    for key, label, hint in INTAKE_FIELDS:
+        lines.append(f"- `{key}`: {label}. {hint}.")
+    lines.extend(
+        [
+            "",
+            "## Outputs",
+            "",
+            "- `wiki/`: structured notes, grep/generate boundary, source registry, and slide plan.",
+            "- `completed/`: GPT-image-2 full-slide reference images with visible text.",
+            "- `background/`: matching GPT-image-2 text-free backgrounds.",
+            "- `pptx/image2slides.pptx`: editable PowerPoint with text above background images.",
+            "- `reports/`: QA, pixel similarity, layout, source, and boundary audits.",
+            "",
+            "## Desktop Rule",
+            "",
+            "In Codex Desktop, start by explaining the workflow briefly, then ask for missing required inputs. Do not create files or call image_gen until required inputs are present.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
 
 
 def project_relative(project: Path, path: Path) -> str:
@@ -348,6 +511,138 @@ def provenance_source_is_forbidden(value: Any) -> bool:
     return any(marker in raw for marker in COMPLETED_FORBIDDEN_SOURCE_MARKERS)
 
 
+def method_requires_native_receipt(method: str) -> bool:
+    raw = method.lower()
+    if raw.startswith("test_") or raw.startswith("api_"):
+        return False
+    if raw.endswith("_with_source_locked_patch"):
+        return False
+    return "native_image_gen" in raw
+
+
+def method_requires_previous_native_receipt(method: str) -> bool:
+    raw = method.lower()
+    if raw.startswith("test_") or raw.startswith("api_"):
+        return False
+    return raw.endswith("_with_source_locked_patch") and "native_image_gen" in raw
+
+
+def resolve_receipt_path(path: str, base_dir: Path) -> Path:
+    raw = Path(path).expanduser()
+    return raw if raw.is_absolute() else (base_dir / raw).resolve()
+
+
+def path_is_native_imagegen_source(path: Path) -> bool:
+    normalized = str(path.resolve()).replace("\\", "/")
+    name = path.name.lower()
+    return name.startswith("ig_") and any(marker in normalized for marker in NATIVE_IMAGEGEN_SOURCE_MARKERS)
+
+
+def find_native_receipt_record(records: Sequence[Dict[str, Any]], slide_no: int) -> Dict[str, Any]:
+    for record in records:
+        try:
+            if int(record.get("slide")) == slide_no:
+                return record
+        except Exception:
+            continue
+    return {}
+
+
+def validate_native_imagegen_manifest(
+    project: Path,
+    spec: Dict[str, Any],
+    *,
+    kind: str,
+    path: Path,
+) -> Dict[str, Any]:
+    if kind not in {"completed", "background"}:
+        die(f"Unsupported native image_gen manifest kind: {kind}")
+    manifest_path = path.expanduser().resolve()
+    if not manifest_path.exists():
+        die(f"Native image_gen manifest not found: {manifest_path}")
+    manifest = read_json(manifest_path)
+    declared_phase = str(manifest.get("phase") or manifest.get("kind") or "").lower()
+    if declared_phase and declared_phase != kind:
+        die(f"Native image_gen manifest phase `{declared_phase}` does not match `{kind}` registration")
+
+    records = manifest.get("copied")
+    if not isinstance(records, list):
+        records = manifest.get("slides")
+    if not isinstance(records, list):
+        die("Native image_gen manifest must contain a `copied` or `slides` list")
+
+    verified = []
+    seen = set()
+    for slide_no in expected_slide_numbers(spec):
+        record = find_native_receipt_record(records, slide_no)
+        if not record:
+            die(f"Native image_gen manifest is missing slide {slide_no:02d}")
+        source_value = record.get("source") or record.get("native_source")
+        dest_value = record.get("dest") or record.get("destination") or record.get("path")
+        if not source_value or not dest_value:
+            die(f"Native image_gen manifest slide {slide_no:02d} must include source and dest")
+
+        source = resolve_receipt_path(str(source_value), manifest_path.parent)
+        dest = resolve_receipt_path(str(dest_value), manifest_path.parent)
+        expected_dest = completed_image_path(project, slide_no) if kind == "completed" else background_image_path(project, slide_no)
+        if dest.resolve() != expected_dest.resolve():
+            die(f"Native image_gen manifest slide {slide_no:02d} dest must be {expected_dest}")
+        if not source.exists():
+            die(f"Native image_gen source file is missing for slide {slide_no:02d}: {source}")
+        if not dest.exists():
+            die(f"Native image_gen registered dest is missing for slide {slide_no:02d}: {dest}")
+        if not path_is_native_imagegen_source(source):
+            die(
+                f"Native image_gen source for slide {slide_no:02d} must be an `ig_*.png` file "
+                f"under a Codex generated_images directory: {source}"
+            )
+        source_hash = sha256_file(source)
+        dest_hash = sha256_file(dest)
+        if source_hash != dest_hash:
+            die(f"Native image_gen receipt hash mismatch for slide {slide_no:02d}; copied file differs from source")
+        seen.add(slide_no)
+        verified.append(
+            {
+                "slide": slide_no,
+                "native_source": str(source),
+                "path": project_relative(project, dest),
+                "sha256": dest_hash,
+            }
+        )
+
+    if len(seen) != len(expected_slide_numbers(spec)):
+        die("Native image_gen manifest does not cover every expected slide")
+
+    return {
+        "path": project_relative(project, manifest_path),
+        "sha256": sha256_file(manifest_path),
+        "phase": kind,
+        "source_root": "Codex generated_images",
+        "verified_copies": verified,
+    }
+
+
+def native_receipt_from_previous(previous: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not previous:
+        return None
+    receipt = previous.get("native_imagegen_manifest")
+    return receipt if isinstance(receipt, dict) else None
+
+
+def validate_embedded_native_receipt(manifest: Dict[str, Any], *, kind: str) -> None:
+    method = str(manifest.get("method", ""))
+    if not method_requires_native_receipt(method) and not method_requires_previous_native_receipt(method):
+        return
+    receipt = manifest.get("native_imagegen_manifest")
+    if not isinstance(receipt, dict):
+        die(f"{kind} native image_gen provenance must include a verified native_imagegen_manifest receipt")
+    if receipt.get("phase") != kind:
+        die(f"{kind} native image_gen receipt phase mismatch")
+    copies = receipt.get("verified_copies")
+    if not isinstance(copies, list) or not copies:
+        die(f"{kind} native image_gen receipt must list verified native copies")
+
+
 def write_completed_provenance(
     project: Path,
     spec: Dict[str, Any],
@@ -356,11 +651,26 @@ def write_completed_provenance(
     source: str,
     note: str = "",
     previous: Optional[Dict[str, Any]] = None,
+    native_manifest: Optional[Path] = None,
 ) -> Dict[str, Any]:
     if method not in COMPLETED_ALLOWED_METHODS:
         die(f"Unsupported completed provenance method: {method}")
     if provenance_source_is_forbidden(source) or provenance_source_is_forbidden(method):
         die("completed provenance cannot point to PPTX/rendered/exported screenshot sources")
+
+    native_receipt: Optional[Dict[str, Any]] = None
+    if native_manifest is not None:
+        native_receipt = validate_native_imagegen_manifest(project, spec, kind="completed", path=native_manifest)
+    elif method_requires_native_receipt(method):
+        die(
+            "Native completed registration requires --native-manifest. "
+            "The manifest must prove each completed PNG was copied from Codex native image_gen "
+            "under $CODEX_HOME/generated_images/.../ig_*.png."
+        )
+    elif method_requires_previous_native_receipt(method):
+        native_receipt = native_receipt_from_previous(previous)
+        if native_receipt is None:
+            die("Source-locked native completed provenance requires previous native_imagegen_manifest receipt")
 
     entries = []
     for slide_no in expected_slide_numbers(spec):
@@ -386,6 +696,11 @@ def write_completed_provenance(
             "source": previous.get("source"),
             "slides": previous.get("slides", []),
         }
+        previous_receipt = native_receipt_from_previous(previous)
+        if previous_receipt:
+            manifest["previous"]["native_imagegen_manifest"] = previous_receipt
+    if native_receipt:
+        manifest["native_imagegen_manifest"] = native_receipt
     write_json(completed_provenance_path(project), manifest)
     return manifest
 
@@ -398,6 +713,7 @@ def write_background_provenance(
     source: str,
     note: str = "",
     previous: Optional[Dict[str, Any]] = None,
+    native_manifest: Optional[Path] = None,
 ) -> Dict[str, Any]:
     if method not in BACKGROUND_ALLOWED_METHODS:
         die(f"Unsupported background provenance method: {method}")
@@ -405,6 +721,20 @@ def write_background_provenance(
         die("background provenance cannot point to PPTX/rendered/exported screenshot sources")
     completed_manifest = validate_completed_provenance(project, spec)
     completed_manifest_hash = sha256_file(completed_provenance_path(project))
+
+    native_receipt: Optional[Dict[str, Any]] = None
+    if native_manifest is not None:
+        native_receipt = validate_native_imagegen_manifest(project, spec, kind="background", path=native_manifest)
+    elif method_requires_native_receipt(method):
+        die(
+            "Native background registration requires --native-manifest. "
+            "The manifest must prove each background PNG was copied from Codex native image_gen edit "
+            "under $CODEX_HOME/generated_images/.../ig_*.png."
+        )
+    elif method_requires_previous_native_receipt(method):
+        native_receipt = native_receipt_from_previous(previous)
+        if native_receipt is None:
+            die("Source-locked native background provenance requires previous native_imagegen_manifest receipt")
 
     entries = []
     for slide_no in expected_slide_numbers(spec):
@@ -432,6 +762,11 @@ def write_background_provenance(
             "source": previous.get("source"),
             "slides": previous.get("slides", []),
         }
+        previous_receipt = native_receipt_from_previous(previous)
+        if previous_receipt:
+            manifest["previous"]["native_imagegen_manifest"] = previous_receipt
+    if native_receipt:
+        manifest["native_imagegen_manifest"] = native_receipt
     write_json(background_provenance_path(project), manifest)
     return manifest
 
@@ -468,6 +803,7 @@ def validate_completed_provenance(project: Path, spec: Dict[str, Any]) -> Dict[s
         die(f"completed provenance method is not an accepted image_gen method: {method}")
     if provenance_source_is_forbidden(source) or provenance_source_is_forbidden(method):
         die("completed provenance points to a PPTX/render/PDF screenshot path, which is forbidden")
+    validate_embedded_native_receipt(manifest, kind="completed")
 
     entries = {int(item.get("slide")): item for item in manifest.get("slides", []) if item.get("slide") is not None}
     for slide_no in expected_slide_numbers(spec):
@@ -499,6 +835,7 @@ def validate_background_provenance(project: Path, spec: Dict[str, Any]) -> Dict[
         die(f"background provenance method is not an accepted image_gen edit method: {method}")
     if provenance_source_is_forbidden(source) or provenance_source_is_forbidden(method):
         die("background provenance points to a PPTX/render/PDF screenshot path, which is forbidden")
+    validate_embedded_native_receipt(manifest, kind="background")
     completed_hash = sha256_file(completed_provenance_path(project))
     if manifest.get("completed_provenance_sha256") != completed_hash:
         die("background provenance is not tied to the current completed provenance; regenerate background edits")
@@ -625,6 +962,20 @@ def cmd_init(args: argparse.Namespace) -> None:
     write_json(project_file(project), spec)
     write_project_docs(project, spec)
     print(f"Initialized Image2Slides project at {project}")
+
+
+def cmd_intake(args: argparse.Namespace) -> None:
+    if args.format == "json":
+        print(json.dumps(intake_json(), ensure_ascii=False, indent=2))
+        return
+    print(intake_markdown(), end="")
+
+
+def cmd_guide(args: argparse.Namespace) -> None:
+    if args.format == "json":
+        print(json.dumps(guide_json(), ensure_ascii=False, indent=2))
+        return
+    print(guide_markdown(), end="")
 
 
 def slide_plan(project: Path) -> Dict[str, Any]:
@@ -1795,8 +2146,78 @@ def cmd_queue(args: argparse.Namespace) -> None:
                 "quality": "high",
             }
             handle.write(json.dumps(job, ensure_ascii=False) + "\n")
+    write_native_imagegen_runbook(project, spec)
     print(f"Wrote {completed_path}")
     print(f"Wrote {background_path}")
+    print(f"Wrote {project / 'reports/native_imagegen_run.md'}")
+
+
+def write_native_imagegen_runbook(project: Path, spec: Dict[str, Any]) -> None:
+    completed_template = {
+        "native_imagegen": "Codex native image_gen GPT-image-2 path",
+        "phase": "completed",
+        "copied": [
+            {
+                "slide": slide_no,
+                "source": "$CODEX_HOME/generated_images/<session>/ig_<completed_output>.png",
+                "dest": str(completed_image_path(project, slide_no)),
+            }
+            for slide_no in expected_slide_numbers(spec)
+        ],
+    }
+    background_template = {
+        "native_imagegen": "Codex native image_gen GPT-image-2 edit path",
+        "phase": "background",
+        "copied": [
+            {
+                "slide": slide_no,
+                "source": "$CODEX_HOME/generated_images/<session>/ig_<background_output>.png",
+                "dest": str(background_image_path(project, slide_no)),
+            }
+            for slide_no in expected_slide_numbers(spec)
+        ],
+    }
+    write_json(project / "reports/native_imagegen_completed_manifest.template.json", completed_template)
+    write_json(project / "reports/native_imagegen_background_manifest.template.json", background_template)
+
+    lines = [
+        "# Native ImageGen Runbook",
+        "",
+        "This file is a hard workflow checkpoint. Do not build PPTX output before both native manifests are registered.",
+        "",
+        "## Completed batch",
+        "",
+        "1. Open `prompts/completed_prompts.jsonl`.",
+        "2. For every line, call Codex native `image_gen` with the exact `prompt`, `model`, `size`, and `quality` fields.",
+        "3. Copy each resulting `$CODEX_HOME/generated_images/.../ig_*.png` file to `completed/slide_XX_completed.png`.",
+        "4. Write `reports/native_imagegen_completed_manifest.json` from the template, replacing every `source` with the real `ig_*.png` path.",
+        "5. Run:",
+        "",
+        "```bash",
+        f"image2slides register-completed --project {project} --native-manifest {project / 'reports/native_imagegen_completed_manifest.json'}",
+        "```",
+        "",
+        "## Background edit batch",
+        "",
+        "1. Open `prompts/background_edit_prompts.jsonl` only after completed provenance is valid.",
+        "2. For every line, call Codex native `image_gen` edit using the matching `completed/slide_XX_completed.png` as image input.",
+        "3. The prompt must remove only text while preserving layout, panels, figures, icons, colors, and geometry.",
+        "4. Copy each resulting `$CODEX_HOME/generated_images/.../ig_*.png` file to `background/slide_XX_background.png`.",
+        "5. Write `reports/native_imagegen_background_manifest.json` from the template, replacing every `source` with the real `ig_*.png` path.",
+        "6. Run:",
+        "",
+        "```bash",
+        f"image2slides register-background --project {project} --native-manifest {project / 'reports/native_imagegen_background_manifest.json'}",
+        "```",
+        "",
+        "## Non-negotiable checks",
+        "",
+        "- `completed/` is never a PPTX/PDF render, screenshot, local template, PIL drawing, or deterministic compositor output.",
+        "- `background/` is never a fresh unrelated generation; it is an edit of the matching completed slide.",
+        "- The only allowed native receipt source shape is `$CODEX_HOME/generated_images/.../ig_*.png`.",
+        "- `register-completed` and `register-background` must fail until source/dest hashes match the receipt.",
+    ]
+    (project / "reports/native_imagegen_run.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def cmd_normalize_source_panels(args: argparse.Namespace) -> None:
@@ -1926,12 +2347,14 @@ def cmd_imagegen(args: argparse.Namespace) -> None:
 def cmd_register_completed(args: argparse.Namespace) -> None:
     project = Path(args.project).resolve()
     spec = load_project(project)
+    native_manifest = Path(args.native_manifest) if args.native_manifest else None
     write_completed_provenance(
         project,
         spec,
         method=args.method,
         source=args.source,
         note=args.note,
+        native_manifest=native_manifest,
     )
     print(f"Wrote {completed_provenance_path(project)}")
 
@@ -1939,12 +2362,14 @@ def cmd_register_completed(args: argparse.Namespace) -> None:
 def cmd_register_background(args: argparse.Namespace) -> None:
     project = Path(args.project).resolve()
     spec = load_project(project)
+    native_manifest = Path(args.native_manifest) if args.native_manifest else None
     write_background_provenance(
         project,
         spec,
         method=args.method,
         source=args.source,
         note=args.note,
+        native_manifest=native_manifest,
     )
     print(f"Wrote {background_provenance_path(project)}")
 
@@ -3805,6 +4230,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force", action="store_true")
     p.set_defaults(func=cmd_init)
 
+    p = sub.add_parser("intake", help="Print the required Image2Slides user intake checklist")
+    p.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p.set_defaults(func=cmd_intake)
+
+    p = sub.add_parser("guide", help="Print the Codex Desktop user guide for workflow, inputs, and outputs")
+    p.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p.set_defaults(func=cmd_guide)
+
     p = sub.add_parser("queue", help="Write GPT-image-2 prompt queues")
     p.add_argument("--project", required=True)
     p.set_defaults(func=cmd_queue)
@@ -3861,6 +4294,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--method", default="registered_native_image_gen", choices=sorted(COMPLETED_ALLOWED_METHODS))
     p.add_argument("--source", default="Codex native image_gen GPT-image-2 output")
     p.add_argument("--note", default="")
+    p.add_argument(
+        "--native-manifest",
+        help="Receipt JSON proving each completed PNG was copied from Codex native image_gen generated_images",
+    )
     p.set_defaults(func=cmd_register_completed)
 
     p = sub.add_parser("register-background", help="Record GPT-image-2 edit provenance for background images copied from native image_gen")
@@ -3868,6 +4305,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--method", default="registered_native_image_gen_edit", choices=sorted(BACKGROUND_ALLOWED_METHODS))
     p.add_argument("--source", default="Codex native image_gen GPT-image-2 text-free background edit output")
     p.add_argument("--note", default="")
+    p.add_argument(
+        "--native-manifest",
+        help="Receipt JSON proving each background PNG was copied from Codex native image_gen edit generated_images",
+    )
     p.set_defaults(func=cmd_register_background)
 
     p = sub.add_parser("analyze", help="Analyze completed/background pairs")

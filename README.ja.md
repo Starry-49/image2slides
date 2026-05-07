@@ -1,18 +1,20 @@
 <p align="center">
-  <img src="./assets/icon.svg" alt="Image2Slides アイコン" width="128" height="128">
+  <img src="./assets/icon.svg" alt="Image2Slides icon" width="128" height="128">
 </p>
 
 # Image2Slides
 
 **Languages:** [English](./README.md) | [中文](./README.zh-CN.md) | 日本語
 
-Image2Slides は、GPT-image のスライド視覚結果を編集可能な PowerPoint に変換する Codex plugin と CLI workflow です。デフォルトでは Codex native `image_gen` で GPT-image-2 の視覚ベースを生成し、source-locked のデータ図を正確に保持し、対応する background の上に編集可能な PowerPoint テキストを配置して、最後にレンダリング結果を参照画像と比較します。
+Image2Slides は、GPT-image slide composition を editable PowerPoint deck に変換する Codex plugin です。基本不変条件は単純です。GPT-image-2 が visual target と matching text-free background を作り、最終 PowerPoint は text を editable のまま保持します。
 
-Plugin の入口は `/image2slides` です。手順は [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md)、決定的な処理を行う CLI は [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py) にあります。
+Plugin entrypoint: `/image2slides`
+Workflow contract: [skills/image2slides/SKILL.md](./skills/image2slides/SKILL.md)
+Helper CLI: [skills/image2slides/scripts/image2slides.py](./skills/image2slides/scripts/image2slides.py)
 
-## この Prompt をコピーするだけ
+## この Prompt をコピー
 
-次の prompt をローカルの Codex または coding agent にそのまま渡すだけで使えます。依存関係の準備、workflow の初期化、Codex App plugin の import は agent に任せます。
+次の prompt をローカル Codex または coding agent に渡してください。依存関係、plugin import、conditional hook の設定は agent に任せます。
 
 ```text
 https://github.com/Starry-49/image2slides から Image2Slides をローカルにインストールし、Codex App で /image2slides plugin として使える状態にしてください。
@@ -20,158 +22,88 @@ https://github.com/Starry-49/image2slides から Image2Slides をローカルに
 端から端まで実行してください:
 1. repository をローカル workspace に clone または update する。
 2. 変更前に README.md、.codex-plugin/plugin.json、skills/image2slides/SKILL.md、package.json、pyproject.toml、tests を確認する。
-3. pyproject.toml から helper workflow を editable Python project としてインストールし、doctor/tests の前に numpy や Pillow などの必須依存が使える状態にする。
+3. pyproject.toml から helper workflow を editable Python project としてインストールし、doctor/tests の前に numpy と Pillow が使える状態にする。
 4. repository root から Codex App plugin を import または refresh する。manifest は .codex-plugin/plugin.json を使う。Codex に skills/ subdirectory を指定しない。
-5. Image2Slides plugin が index され、/image2slides が使えることを確認する。
-6. plugin doctor と最小テストを実行する。
-7. 小さな local deck workspace を作り、wiki、prompts、completed、background、analysis、pptx、reports の workflow folders を初期化できることを確認する。
-8. GPT-image-2 はデフォルトで Codex native image_gen を使うことを確認する。私が SDK/API fallback を明示しない限り、OPENAI_API_KEY を求めない。
-9. 最終的な plugin path、dependency/runtime choices、verification evidence、必要な Codex App refresh 手順を報告する。
+5. hooks/image2slides-native-hook.mjs を conditional Codex hook として UserPromptSubmit、Bash PreToolUse、Stop に登録する。unrelated work では何もせず、/image2slides prompt または image2slides CLI command の後だけ有効にする。
+6. /image2slides が index されていることを確認し、doctor/tests を実行し、小さな deck workspace で wiki、prompts、completed、background、analysis、pptx、reports を初期化できることを確認する。
+7. GPT-image-2 はデフォルトで Codex native image_gen を使い、completed/background registration は $CODEX_HOME/generated_images/.../ig_*.png からコピーした native receipt manifest 付きの場合だけ許可する。私が SDK/API fallback を明示しない限り、OPENAI_API_KEY を求めない。
+8. plugin path、hook path、runtime choices、verification evidence、必要な Codex App refresh 手順を報告する。
 
 生成した deck と private knowledge-base material はすべて local に保持してください。私が明示的に依頼しない限り、example artifacts を公開しないでください。
 ```
 
-## 必須入力
+## Core Rules
 
-`/image2slides` は、生成前に次の入力を必須とします。
+- Codex Desktop usage は silent execution ではなく、visible guide から始めます。workflow、inputs、outputs を説明する必要がある場合は `image2slides guide` を実行します。
+- Required inputs: style/tone、aspect ratio、page count、purpose、scene、user knowledge materials。
+- Required inputs は control metadata であり、visible slide text に出してはいけません。
+- Required input が欠けている場合、agent は file 作成前に不足項目だけを質問します。`image2slides intake` はこの checklist を出力します。
+- Facts、citations、current data、source-locked results は `wiki/grep/` に置き、generated narrative と visual ideas は `wiki/generate/` に置きます。
+- `completed/` は GPT-image-2 full-slide reference with visible text でなければなりません。PPTX/PDF render、screenshot、local template、deterministic drawing で埋めてはいけません。
+- `background/` は matching completed の GPT-image-2 edit で、text だけを除去し geometry を維持します。
+- Native registration には、各 PNG が Codex native `image_gen` output `$CODEX_HOME/generated_images/.../ig_*.png` からコピーされたことを示す receipt manifest が必要です。
+- Final PPTX の text は editable PowerPoint text として matching background の上に重ねます。
 
-- スライドのベーススタイルと色調
-- スライドのアスペクト比
-- スライド枚数
-- 用途: speech または showcase
-- 利用シーン: academic、enterprise、classroom、life、または明示された別シーン
-- ナレッジベース: ユーザー提供のテキスト、画像、参照資料、資料パス
+## Conditional Hook
 
-[examples/spec.example.json](./examples/spec.example.json) を初期形として使えます。
+[hooks/image2slides-native-hook.mjs](./hooks/image2slides-native-hook.mjs) は workflow guard であり、global PPT rule ではありません。
 
-## Workflow から Results まで
+- `UserPromptSubmit` は `/image2slides` または明示的な Image2Slides request のときだけ two-pass GPT-image-2 contract を注入します。
+- Bash `PreToolUse` は `image2slides ...` CLI command を検査し、Image2Slides project が active の間は PPTX/python-pptx bypass を block します。
+- `Stop` は active project に native completed/background provenance がない場合、早すぎる終了を block します。
+- Native `register-completed` と `register-background` は `--native-manifest` がない場合 block されます。
+- `compose-source-locked`、`analyze`、`build-pptx`、`qa`、`audit-layout`、`audit-boundaries` は completed/background provenance がない場合 block されます。
+- background generation と registration には completed provenance が先に必要です。
 
-1. プロジェクト wiki と出力構造を作成します。
+## Workflow
+
+1. Deck project を初期化します。
 
    ```bash
+   image2slides guide
+   image2slides intake
    image2slides init --project decks/my-deck --spec examples/spec.example.json
    ```
 
-   `project.json`、`wiki/00_project_brief.md`、`wiki/01_wiki_map.md`、`wiki/02_content_boundary.md`、`wiki/03_source_registry.yml`、`wiki/04_slide_plan.json` が作成されます。
+2. Wiki boundary を埋めます。
 
-2. コンテンツ境界を記入します。
+   `wiki/02_content_boundary.md`、`wiki/03_source_registry.yml`、`wiki/04_slide_plan.json` を更新します。
 
-   - `wiki/grep/` には、資料・引用・web/search に基づく必要がある事実を書きます。
-   - `wiki/generate/` には、生成してよい物語構成、比喩、例、表現案を書きます。
-   - `wiki/02_content_boundary.md` を更新し、各スライドの grep_required と generation_allowed を明確にします。
-
-3. prompt queue を作成します。
+3. Prompts を作り、source panels を正規化します。
 
    ```bash
    image2slides queue --project decks/my-deck
+   image2slides normalize-source-panels --project decks/my-deck --check --strict
    ```
 
-   出力:
-   - `prompts/completed_prompts.jsonl`
-   - `prompts/background_edit_prompts.jsonl`
+   `queue` は `reports/native_imagegen_run.md` と native receipt manifest templates も書き出します。
 
-4. Codex native `image_gen` で GPT-image-2 の completed slide reference を生成します。
+4. Two GPT-image-2 image batches を生成します。
 
-   デフォルトの plugin workflow は Codex native image generation を使うため、`OPENAI_API_KEY` は不要です。各 `completed/slide_XX_completed.png` は、GPT-image-2 が生成した、表示テキストを含む full-slide reference でなければなりません。PPTX/PDF render、local screenshot、deterministic drawing output から `completed/` を埋めてはいけません。native image_gen 出力を `completed/` にコピーしたら登録します。
+   Codex native `image_gen` で completed slides を作り、その completed slides を text-free backgrounds に edit します。
 
    ```bash
-   image2slides register-completed --project decks/my-deck
+   image2slides register-completed --project decks/my-deck --native-manifest decks/my-deck/reports/native_imagegen_completed_manifest.json
+   image2slides register-background --project decks/my-deck --native-manifest decks/my-deck/reports/native_imagegen_background_manifest.json
    ```
 
-5. completed 画像を GPT-image-2 edit して、文字なし background を生成します。
-
-   background pass は文字だけを除去し、`completed/` と揃ったレイアウト、図形、色、ジオメトリを保持します。native image_gen edit の出力を `background/` にコピーした後は登録が必須です。
-
-   ```bash
-   image2slides imagegen --project decks/my-deck --phase background --dry-run
-   image2slides imagegen --project decks/my-deck --phase background --execute
-   image2slides register-background --project decks/my-deck
-   ```
-
-   変更してはいけないデータや結果は元の図を `wiki/sources/` に置き、trim 済み source 図を既存の image_gen completed/background pair に正確に patch します。
+5. Source-locked figures を patch し、PPTX を build します。
 
    ```bash
    image2slides compose-source-locked --project decks/my-deck
-   image2slides audit-layout --project decks/my-deck --strict
-   ```
-
-   出力先は `background/slide_XX_background.png` と `background/.image2slides_background_provenance.json` です。background prompt は、文字だけを除去し、レイアウト、図形、色、ジオメトリを保持することを要求します。`analyze`、`build-pptx`、`compose-source-locked`、`qa` は、未登録の local template、screenshot、deterministic drawing、古い background、現在の completed provenance に紐づかない background batch を拒否します。
-   layout audit は、source 図が検出された native panel 内に収まること、panel inset ratio が trim 後の source 図の比率に合うこと、source panel/image 同士や編集可能テキストと重ならないこと、figure-first slide では図がテキストより視覚的に主役であること、native imagegen panel の上に重複した角丸フレームを追加しないことを固定チェックします。
-   source fitting は blank pixel を先に裁ち、GPT-image-2 prompt では source 画像の比率に合う panel を予約します。compose 時には生成された下地または background の実際の panel エッジを検出し、`fit_margin_px` で内側に縮め、4 辺の平行エッジ制約の下で最大スケール化して slack を最小化し、画像中心を inset panel の中心に合わせます。生成/native panel では、layer がより小さい値を指定しても inset margin は最低 32 px です。source 図の edge-connected near-white blank はデフォルトで透明に貼り込まれ、図表の白い矩形背景が生成 panel を覆わないようにします。計画上の `bbox` は detector の search hint であり、実際の panel ではありません。生成された panel 比率が trim 済み source 比率と合わない場合は、source を伸縮・裁断せず GPT-image-2 panel を再生成します。
-   `queue` は各 source panel を `wiki/04_slide_plan.json` の `non_editable_image_panel` layout boundary としても書き込みます。編集可能な PowerPoint テキストはこの領域に入れてはいけません。source chart、diagram、schematic、icon の内部に最初からある文字は画像資産の一部として保存し、ユーザーが明示的に抽出を求めない限り editable text diagnostic から除外します。
-
-   Figure-first standard:
-   - 値、軸、統計関係を正確に保つ必要がある result/data figure だけを exact source panel として残す
-   - 装飾的な diagram、icon、内部テキストを抽出できる text-heavy screenshot には大きな panel を予約しない
-   - テキストは少なくし、図の読み方を支える役割に限定する
-   - 複数図で混み合う場合は、全図を縮小するのではなくスライドを分ける
-
-   completed generation の API/SDK fallback は、明示的に必要な場合だけ使います。
-
-   ```bash
-   image2slides imagegen --project decks/my-deck --phase completed --dry-run
-   image2slides imagegen --project decks/my-deck --phase completed --execute
-   ```
-
-6. テキスト領域と blank 領域を解析します。
-
-   ```bash
    image2slides analyze --project decks/my-deck
-   ```
-
-   出力:
-   - `analysis/slide_XX.json`
-   - `analysis/manifest.json`
-
-   解析器は `completed/` と `background/` を比較し、ピクセル差分をテキスト mask として扱い、主背景色、テキスト領域、低変化の blank 領域を推定します。
-   この mask を文字補正の基準にする前に、completed/background の差分が主に文字だけかを確認してください。panel、figure、illustration など非テキスト形状が動いている場合は、PPT テキストを調整するのではなく GPT-image-2 background edit を再生成します。
-
-7. 編集可能な PPTX を作成します。
-
-   ```bash
    image2slides build-pptx --project decks/my-deck
    ```
 
-   出力:
-   - `pptx/image2slides.pptx`
-
-   各スライドは対応する background 画像をベースとして使い、`wiki/04_slide_plan.json` の文字を編集可能な PowerPoint テキストボックスとして重ねます。
-
-8. レンダリングして検証します。
+6. Verify してから短い human detail check をします。
 
    ```bash
    image2slides qa --project decks/my-deck --strict
    ```
 
-   出力:
-   - `reports/rendered/`
-   - `reports/qa_similarity.json`
-   - `reports/qa_report.md`
-   - `reports/source_layer_audit.md`
-   - `reports/text_alignment_audit.md`
-   - `reports/source_render_audit.md`
-   - `reports/background_audit.md`
-   - `reports/content_boundary_audit.md`
-   - `reports/content_boundary_overlays/`
+   QA は local tools が利用可能な場合 PPTX を render し、`completed/` と比較し、source-panel layout、background uniqueness、boundary overlays を確認します。最後の human pass では panel padding、line breaks、text scale、overflow、page consistency、source data/results が改変されていないことだけを確認します。
 
-   LibreOffice と `pdftoppm` が使える場合、QA は PPTX をローカルでレンダリングし、`completed/` と pixel / patch similarity を比較し、固定の source-layer layout audit も再実行します。rendered source crop が final source-locked background crop と一致すること、source transparent blank が source-free native panel と一致すること、editable text が completed reference と局所的に揃うことも確認します。strict mode では byte-identical または視覚的に近すぎる background page も拒否します。default strict similarity preset は overall pixel similarity >= 0.90 を要求し、GPT-image-2 reference text と editable PowerPoint text の通常の font rasterization 差分だけを許容します。
-   content-boundary audit は layout confidence を補強する診断です。main blank color を検出し、`blank_zone`、`forbidden_zone`、`text_fill_zone` を定義し、source panel を no-text region として扱い、画像内部ラベルを除外し、Codex/LLM review 用 overlay を書き出します。単独で実行する場合は `image2slides audit-boundaries --project decks/my-deck --rendered-dir reports/rendered` を使います。これらの warning も QA 失敗にしたい場合だけ `qa` に `--boundary-strict` を追加します。
-
-どこかの段階がこの順序から外れた場合は、最初に失効した段階から下流 artifact を削除し、最後の信頼できる checkpoint から再開します。例えば `completed/` が無効なら completed、background、analysis、PPTX、QA をやり直し、`background/` が無効なら background、analysis、PPTX、QA をやり直します。
-
-9. 短い human detail check を行います。
-
-   `pptx/image2slides.pptx` を開き、QA が過剰適合すべきでない細部だけを確認します。source 図と panel の見た目の余白、改行、フォントサイズ、明らかなテキストはみ出し、ページ間の一貫性、source data/results が変更されていないことを見ます。この手順は strict QA 後の軽い最終確認であり、QA の代替ではありません。
-
-## Howitworks Example
-
-このリポジトリには、workflow 全体の最小メンタルモデルとして [howitworks/](./howitworks/) を含めています。ナレッジベース文書、抽出テキストと図、構造化 wiki、GPT-image-2 native base、source-locked の completed/background 画像、最終 PPTX、レンダリング結果、QA report、短い example README が入っています。
-
-![Howitworks human-reviewed PDF preview](./howitworks/image2slides_run/pptx/image2slides_preview.png)
-
-主な編集可能成果物は [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx) です。human-reviewed の視覚 export は [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf) です。最終的な見た目確認には、この PDF を優先してください。レビュー済み PowerPoint から直接書き出されたもので、後続変換によるずれを避けられます。軽量 plugin bundle には、この大きな example artifact set を含めません。example を確認または再実行する場合は GitHub repo を clone してください。
-
-## 出力ディレクトリ
+## Output Map
 
 ```text
 decks/my-deck/
@@ -189,6 +121,13 @@ decks/my-deck/
 └── reports/
 ```
 
-## 設計上の境界
+## Example
 
-Image2Slides は最終 deck を画像だけにはしません。完成版スライド画像は視覚参照と QA ターゲットです。最終成果物では重要なテキストを PowerPoint 上で編集可能に保ち、文字なし background を安定したベースレイヤーとして使います。
+Repository には full workflow の minimal mental model として [howitworks/](./howitworks/) が含まれています。
+
+![Howitworks human-reviewed PDF preview](./howitworks/image2slides_run/pptx/image2slides_preview.png)
+
+Primary editable output: [howitworks/image2slides_run/pptx/image2slides.pptx](./howitworks/image2slides_run/pptx/image2slides.pptx)
+Reviewed visual snapshot: [howitworks/image2slides_run/pptx/image2slides.pdf](./howitworks/image2slides_run/pptx/image2slides.pdf)
+
+Lightweight plugin bundle には、この大きな example artifact set は含まれません。example を確認または再実行する場合は GitHub repo を clone してください。

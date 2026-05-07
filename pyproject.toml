@@ -1,6 +1,6 @@
 [project]
 name = "image2slides"
-version = "1.0.0"
+version = "1.0.1"
 description = "Codex plugin for image-generated slide comps and editable PowerPoint output"
 requires-python = ">=3.10"
 dependencies = [

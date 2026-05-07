@@ -1,6 +1,6 @@
 {
   "name": "image2slides",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generate editable PowerPoint decks from image-generated slide compositions and text-free backgrounds.",
   "author": {
     "name": "starry"
@@ -31,8 +31,8 @@
     "privacyPolicyURL": "https://github.com/Starry-49/image2slides",
     "termsOfServiceURL": "https://github.com/Starry-49/image2slides",
     "defaultPrompt": [
-      "/image2slides Create a 16:9 academic talk deck with a cool blue medical style.",
-      "/image2slides Build an enterprise showcase deck from my provided materials."
+      "/image2slides Guide me through the required inputs, then create an editable PPTX from my materials.",
+      "/image2slides I want to turn my knowledge-base files into slides. First explain the workflow and ask for anything missing."
     ],
     "brandColor": "#2F80ED",
     "composerIcon": "./assets/icon.svg",

@@ -1,6 +1,6 @@
 {
   "name": "image2slides",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Codex plugin and CLI workflow for turning GPT-image slide visuals into editable PowerPoint decks.",
   "license": "MIT",
   "homepage": "https://starry-49.github.io/image2slides/",
@@ -27,6 +27,7 @@
     "agents/",
     "assets/",
     "examples/",
+    "hooks/",
     "skills/image2slides/SKILL.md",
     "skills/image2slides/agents/",
     "skills/image2slides/references/",
@@ -40,6 +41,7 @@
   ],
   "scripts": {
     "doctor": "python3 skills/image2slides/scripts/image2slides.py doctor",
+    "guide": "python3 skills/image2slides/scripts/image2slides.py guide",
     "setup:python": "python3 -m pip install -e .",
     "test": "PYTHONPATH=skills/image2slides/scripts python3 tests/test_image2slides.py"
   },
